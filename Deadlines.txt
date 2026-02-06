@@ -1,7 +1,8 @@
-Week 3 - functioning elements (front, back, database)
-Week 4 - functioning MVP
+Week 4 - functioning elements (front, back, database)
+Week 5 - functioning MVP
 Week 6 - Working with most feature
 Week 8 - testing
 Week 9 - everything complete
 Weds Week 9 - each individual portion of the presentation complete
 Week 10 - presentation complete
+
