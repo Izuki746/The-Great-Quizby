@@ -1,22 +1,89 @@
 
-import React from 'react';
-import { AppView } from '../types';
+import React, { useState } from 'react';
+import { AppView, Question, QuizConfig } from '../types';
 import { Button } from '../components/Button';
+import { generateQuizQuestions } from '../services/geminiService';
 
 interface DashboardViewProps {
   onViewChange: (view: AppView) => void;
+  onQuestionsGenerated: (questions: Question[], config: QuizConfig) => void;
 }
 
-export const DashboardView: React.FC<DashboardViewProps> = ({ onViewChange }) => {
+export const DashboardView: React.FC<DashboardViewProps> = ({ onViewChange, onQuestionsGenerated }) => {
+  const [loadingTopic, setLoadingTopic] = useState<string | null>(null);
+
   const categories = [
-    { name: 'World Culture', icon: 'public', players: '1.5k', color: 'text-blue-400', img: 'https://images.unsplash.com/photo-1521295121783-8a321d551ad2?auto=format&fit=crop&q=80&w=400' },
-    { name: 'Cinema & TV', icon: 'movie', players: '2.3k', color: 'text-pink-400', img: 'https://images.unsplash.com/photo-1485846234645-a62644f84728?auto=format&fit=crop&q=80&w=400' },
-    { name: 'Food & Drink', icon: 'restaurant', players: '3.1k', color: 'text-orange-400', img: 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&q=80&w=400' },
-    { name: 'Global History', icon: 'history_edu', players: '980', color: 'text-yellow-400', img: 'https://images.unsplash.com/photo-1461360346148-3470a5d6e241?auto=format&fit=crop&q=80&w=400' },
+    { 
+      name: 'World Culture', 
+      topic: 'Diverse Global Cultures, Traditions, and Heritage',
+      icon: 'public', 
+      players: '1.5k', 
+      color: 'text-blue-400', 
+      img: 'https://images.unsplash.com/photo-1521295121783-8a321d551ad2?auto=format&fit=crop&q=80&w=400' 
+    },
+    { 
+      name: 'Cinema & TV', 
+      topic: 'Classic and Modern Cinema, Film History, and Television Industry',
+      icon: 'movie', 
+      players: '2.3k', 
+      color: 'text-pink-400', 
+      img: 'https://images.unsplash.com/photo-1485846234645-a62644f84728?auto=format&fit=crop&q=80&w=400' 
+    },
+    { 
+      name: 'Food & Drink', 
+      topic: 'Global Gastronomy, Culinary Arts, and Beverage History',
+      icon: 'restaurant', 
+      players: '3.1k', 
+      color: 'text-orange-400', 
+      img: 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&q=80&w=400' 
+    },
+    { 
+      name: 'Global History', 
+      topic: 'World History from Ancient Civilizations to Modern Era Foundations',
+      icon: 'history_edu', 
+      players: '980', 
+      color: 'text-yellow-400', 
+      img: 'https://images.unsplash.com/photo-1461360346148-3470a5d6e241?auto=format&fit=crop&q=80&w=400' 
+    },
   ];
+
+  const handleQuickStart = async (cat: typeof categories[0]) => {
+    if (loadingTopic) return;
+    
+    setLoadingTopic(cat.name);
+    
+    const config: QuizConfig = {
+      topic: cat.topic,
+      difficulty: 'Undergrad',
+      questionCount: 5
+    };
+
+    try {
+      const questions = await generateQuizQuestions(config);
+      onQuestionsGenerated(questions, config);
+    } catch (e) {
+      console.error(e);
+      // Fallback is handled in service
+    } finally {
+      setLoadingTopic(null);
+    }
+  };
 
   return (
     <div className="flex-1 flex flex-col items-center p-6 md:p-12 max-w-7xl mx-auto w-full">
+      {/* Loading Overlay for Direct Generation */}
+      {loadingTopic && (
+        <div className="fixed inset-0 z-[100] bg-background-dark/80 backdrop-blur-xl flex flex-col items-center justify-center">
+          <div className="relative w-24 h-24 mb-6">
+            <div className="absolute inset-0 border-4 border-primary/20 rounded-full"></div>
+            <div className="absolute inset-0 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+            <span className="material-symbols-outlined absolute inset-0 flex items-center justify-center text-4xl text-primary animate-pulse">sync_alt</span>
+          </div>
+          <h2 className="text-2xl font-bold text-white mb-2 font-display">Initializing {loadingTopic} Module</h2>
+          <p className="text-slate-400 text-sm tracking-widest uppercase animate-pulse">Synchronizing academic data via Gemini...</p>
+        </div>
+      )}
+
       <div className="text-center space-y-6 animate-float mb-12 mt-8">
          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-secondary/10 border border-secondary/30 text-purple-300 text-xs font-semibold tracking-wide uppercase">
             <span className="relative flex h-2 w-2">
@@ -53,7 +120,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onViewChange }) =>
         <div className="flex items-end justify-between mb-6">
            <div>
               <h3 className="text-2xl font-bold text-white font-display">Trending Categories</h3>
-              <p className="text-gray-400 text-sm mt-1">Explore popular topics right now</p>
+              <p className="text-gray-400 text-sm mt-1">Directly start these popular topics</p>
            </div>
            <button 
              onClick={() => onViewChange(AppView.QUICK_MATCH)}
@@ -67,15 +134,20 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onViewChange }) =>
            {categories.map((cat) => (
              <div 
                key={cat.name}
-               className="group relative h-48 rounded-xl overflow-hidden bg-[#1a1a20] border border-white/10 hover:border-primary/50 cursor-pointer transition-all"
-               onClick={() => onViewChange(AppView.QUICK_MATCH)}
+               className={`group relative h-48 rounded-xl overflow-hidden bg-[#1a1a20] border border-white/10 hover:border-primary/50 cursor-pointer transition-all ${loadingTopic === cat.name ? 'ring-2 ring-primary ring-offset-2 ring-offset-background-dark opacity-50' : ''}`}
+               onClick={() => handleQuickStart(cat)}
              >
                 <div className="absolute inset-0 bg-cover bg-center opacity-60 group-hover:opacity-40 transition-opacity" style={{ backgroundImage: `url(${cat.img})`}}></div>
                 <div className="absolute inset-0 bg-gradient-to-t from-black via-black/60 to-transparent"></div>
                 <div className="absolute bottom-0 left-0 p-5">
                    <span className={`material-symbols-outlined ${cat.color} mb-2 text-3xl`}>{cat.icon}</span>
                    <h4 className="text-lg font-bold text-white group-hover:text-primary transition-colors">{cat.name}</h4>
-                   <p className="text-xs text-gray-400 mt-1 font-mono">{cat.players} Active Players</p>
+                   <p className="text-xs text-gray-400 mt-1 font-mono">{loadingTopic === cat.name ? 'Generating...' : `${cat.players} Active Players`}</p>
+                </div>
+                
+                {/* Visual Indicator for direct action */}
+                <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity translate-x-2 group-hover:translate-x-0">
+                  <span className="material-symbols-outlined text-primary bg-background-dark/50 rounded-full p-1">play_arrow</span>
                 </div>
              </div>
            ))}
