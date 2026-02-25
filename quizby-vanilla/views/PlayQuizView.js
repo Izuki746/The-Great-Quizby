@@ -1,12 +1,24 @@
-// Play Quiz View
+// views/PlayQuizView.js
 import { Button } from '../components/Button.js';
 
+// 1. Extract the state variables to the global module level to prevent them from being reset during rendering
+let currentIndex = 0;
+let selectedOption = null;
+let userAnswers = [];
+let timeLeft = 30;
+let timerInterval = null;
+let currentQuizRef = null;
+
 export function PlayQuizView(questions, config, onComplete) {
-  let currentIndex = 0;
-  let selectedOption = null;
-  let userAnswers = [];
-  let timeLeft = 30;
-  let timerInterval = null;
+  // 2. Test if it is a new test，set stage to defult
+  if (currentQuizRef !== questions) {
+    currentIndex = 0;
+    selectedOption = null;
+    userAnswers = [];
+    timeLeft = 30;
+    clearInterval(timerInterval);
+    currentQuizRef = questions;
+  }
 
   const currentQuestion = questions[currentIndex];
 
@@ -15,24 +27,24 @@ export function PlayQuizView(questions, config, onComplete) {
     timeLeft = 30;
     
     timerInterval = setInterval(() => {
-      timeLeft--;
-      
       const timerDisplay = document.getElementById('timer-display');
       const timerIcon = document.getElementById('timer-icon');
       
-      if (timerDisplay) {
-        timerDisplay.textContent = `00:${timeLeft.toString().padStart(2, '0')}`;
-        if (timeLeft < 10) {
-          timerDisplay.className = 'text-xl font-bold tabular-nums tracking-tight text-red-500';
-          if (timerIcon) {
-            timerIcon.className = 'material-symbols-outlined text-red-500 animate-pulse';
-          }
-        } else {
-          timerDisplay.className = 'text-xl font-bold tabular-nums tracking-tight text-white';
-          if (timerIcon) {
-            timerIcon.className = 'material-symbols-outlined text-primary';
-          }
-        }
+      // 3. Safety check: If the user leaves the page (DOM element no longer exists), destroy the timer
+      if (!timerDisplay) {
+        clearInterval(timerInterval);
+        return;
+      }
+
+      timeLeft--;
+      
+      timerDisplay.textContent = `00:${timeLeft.toString().padStart(2, '0')}`;
+      if (timeLeft < 10) {
+        timerDisplay.className = 'text-xl font-bold tabular-nums tracking-tight text-red-500';
+        if (timerIcon) timerIcon.className = 'material-symbols-outlined text-red-500 animate-pulse';
+      } else {
+        timerDisplay.className = 'text-xl font-bold tabular-nums tracking-tight text-white';
+        if (timerIcon) timerIcon.className = 'material-symbols-outlined text-primary';
       }
       
       if (timeLeft <= 0) {
@@ -46,7 +58,6 @@ export function PlayQuizView(questions, config, onComplete) {
     clearInterval(timerInterval);
     
     const isCorrect = answer === questions[currentIndex].correctAnswer;
-    
     userAnswers.push({
       questionIndex: currentIndex,
       userAnswer: answer || "Time Out",
@@ -57,22 +68,15 @@ export function PlayQuizView(questions, config, onComplete) {
       currentIndex++;
       selectedOption = null;
       window.quizbyApp.render();
-      setTimeout(() => startTimer(), 100);
+      // 4. Remove the original setTimeout(() => startTimer(), 100) because render will re-trigger the bound startTimer
     } else {
-      // Quiz Complete
       const score = userAnswers.filter(a => a.isCorrect).length * 100;
       const correctCount = userAnswers.filter(a => a.isCorrect).length;
-      
       const streak = calculateStreak(userAnswers);
       
       onComplete({
-        score,
-        totalQuestions: questions.length,
-        correctAnswers: correctCount,
-        streak,
-        date: new Date().toISOString(),
-        topic: config.topic,
-        answers: userAnswers
+        score, totalQuestions: questions.length, correctAnswers: correctCount,
+        streak, date: new Date().toISOString(), topic: config.topic, answers: userAnswers
       });
     }
   };
@@ -85,6 +89,8 @@ export function PlayQuizView(questions, config, onComplete) {
     }
     return streak;
   };
+
+  // ... (Keep setTimeout bindng and HTML return unchange)
 
   setTimeout(() => {
     startTimer();
