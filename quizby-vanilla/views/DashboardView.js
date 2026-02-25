@@ -1,7 +1,9 @@
-// Dashboard View
+// views/DashboardView.js
 import { Button } from '../components/Button.js';
+import { generateQuizQuestions } from '../js/quizService.js'; // 1. import serveice of create quiz
 
-export function DashboardView(onViewChange) {
+// 2. Add onQuestionsGenerated parameter
+export function DashboardView(onViewChange, onQuestionsGenerated) {
   const categories = [
     { name: 'World Culture', icon: 'public', players: '1.5k', color: 'text-blue-400', img: 'https://images.unsplash.com/photo-1521295121783-8a321d551ad2?auto=format&fit=crop&q=80&w=400' },
     { name: 'Cinema & TV', icon: 'movie', players: '2.3k', color: 'text-pink-400', img: 'https://images.unsplash.com/photo-1485846234645-a62644f84728?auto=format&fit=crop&q=80&w=400' },
@@ -14,21 +16,34 @@ export function DashboardView(onViewChange) {
     const quickMatchBtn = document.getElementById('quick-match-btn');
     const viewAllBtn = document.getElementById('view-all-btn');
 
-    if (createQuizBtn) {
-      createQuizBtn.addEventListener('click', () => onViewChange('CREATE_QUIZ'));
-    }
-    if (quickMatchBtn) {
-      quickMatchBtn.addEventListener('click', () => onViewChange('QUICK_MATCH'));
-    }
-    if (viewAllBtn) {
-      viewAllBtn.addEventListener('click', () => onViewChange('QUICK_MATCH'));
-    }
+    if (createQuizBtn) createQuizBtn.addEventListener('click', () => onViewChange('CREATE_QUIZ'));
+    if (quickMatchBtn) quickMatchBtn.addEventListener('click', () => onViewChange('QUICK_MATCH'));
+    if (viewAllBtn) viewAllBtn.addEventListener('click', () => onViewChange('QUICK_MATCH'));
 
-    // Category cards
-    document.querySelectorAll('.category-card').forEach(card => {
-      card.addEventListener('click', () => onViewChange('QUICK_MATCH'));
+    // 3. 修改分类卡片的点击逻辑
+    document.querySelectorAll('.category-card').forEach((card, idx) => {
+      card.addEventListener('click', async () => {
+         const topic = categories[idx].name;
+         const config = { topic, difficulty: 'Undergrad', questionCount: 5 };
+         
+         // show loading animation
+         const originalContent = card.innerHTML;
+         card.innerHTML = `<div class="absolute inset-0 flex items-center justify-center bg-black/80 z-20"><span class="material-symbols-outlined animate-spin text-primary text-4xl">progress_activity</span></div>` + originalContent;
+         
+         try {
+            const questions = await generateQuizQuestions(config);
+            if (onQuestionsGenerated) {
+                onQuestionsGenerated(questions, config);
+            }
+         } catch(e) {
+            console.error(e);
+            onViewChange('QUICK_MATCH'); // 失败则后退到选择器
+         }
+      });
     });
   }, 0);
+
+ 
 
   return `
     <div class="flex-1 flex flex-col items-center p-6 md:p-12 max-w-7xl mx-auto w-full">
