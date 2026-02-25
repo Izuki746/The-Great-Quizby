@@ -1,16 +1,24 @@
-// Create Quiz View
+// views/CreateQuizView.js (修改文件开头)
 import { Button } from '../components/Button.js';
 import { generateQuizQuestions } from '../js/quizService.js';
 
-export function CreateQuizView(onQuestionsGenerated) {
+// 1. 接收 onBack 参数
+export function CreateQuizView(onQuestionsGenerated, onBack) {
   let isLoading = false;
   let topic = '';
   let difficulty = 'Undergrad';
 
   setTimeout(() => {
+    // 2. 绑定返回按钮事件
+    const backBtn = document.getElementById('create-back-btn');
     const topicInput = document.getElementById('quiz-topic');
     const generateBtn = document.getElementById('generate-btn');
     const difficultyBtns = document.querySelectorAll('.difficulty-btn');
+    if (backBtn) {
+      backBtn.addEventListener('click', onBack);
+    }
+// ... Keep listener remain  ...
+
 
     if (topicInput) {
       topicInput.addEventListener('input', (e) => {
