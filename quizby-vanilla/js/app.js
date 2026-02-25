@@ -108,17 +108,18 @@ class QuizbyApp {
           () => this.changeView(AppView.AUTH)
         );
         break;
+      // Edit here
       case AppView.DASHBOARD:
-        viewContent = DashboardView((view) => this.changeView(view));
-        break;
-      case AppView.CREATE_QUIZ:
-        viewContent = CreateQuizView((questions, config) => 
-          this.handleQuestionsGenerated(questions, config)
+        viewContent = DashboardView(
+          (view) => this.changeView(view),
+          // Add a callback for generating questions
+          (questions, config) => this.handleQuestionsGenerated(questions, config)
         );
         break;
-      case AppView.QUICK_MATCH:
-        viewContent = QuickMatchView(
+      case AppView.CREATE_QUIZ:
+        viewContent = CreateQuizView(
           (questions, config) => this.handleQuestionsGenerated(questions, config),
+          // Add a callback for the back button
           () => this.changeView(AppView.DASHBOARD)
         );
         break;
