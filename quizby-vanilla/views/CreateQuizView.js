@@ -85,10 +85,16 @@ export function CreateQuizView(onQuestionsGenerated, onBack) {
                   Establish the framework for your academic assessment. Define parameters and input protocols.
                </p>
             </div>
-            <div class="flex gap-2">
+            <div class="flex gap-2 items-center">
                <span class="px-4 py-1.5 rounded-full bg-primary/20 text-primary border border-primary/30 text-[10px] font-black uppercase tracking-widest">
                   Live Generator
                </span>
+               ${Button({
+                 variant: 'ghost',
+                 icon: 'arrow_back',
+                 id: 'create-back-btn',
+                 children: 'Back'
+               })}
             </div>
          </div>
 
