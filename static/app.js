@@ -1,14 +1,15 @@
 // Main Application State and Router
-import { SplashView } from '../views/SplashView.js';
-import { AuthView } from '../views/AuthView.js';
-import { RegisterView } from '../views/RegisterView.js';
-import { DashboardView } from '../views/DashboardView.js';
-import { CreateQuizView } from '../views/CreateQuizView.js';
-import { QuickMatchView } from '../views/QuickMatchView.js';
-import { PlayQuizView } from '../views/PlayQuizView.js';
-import { ResultsView } from '../views/ResultsView.js';
-import { ProfileView } from '../views/ProfileView.js';
-import { Layout } from '../components/Layout.js';
+import { SplashView } from './SplashView.js';
+import { AuthView } from './AuthView.js';
+import { RegisterView } from './RegisterView.js';
+import { DashboardView } from './DashboardView.js';
+import { CreateQuizView } from './CreateQuizView.js';
+import { QuickMatchView } from './QuickMatchView.js';
+import { PlayQuizView } from './PlayQuizView.js';
+import { ResultsView } from './ResultsView.js';
+import { ProfileView } from './ProfileView.js';
+import { Layout } from './Layout.js';
+import { HomeView } from './homeView.js';
 
 // App Views Enum
 const AppView = {
@@ -63,8 +64,62 @@ class QuizbyApp {
     this.render();
   }
 
-  handleLogin() {
-    this.changeView(AppView.DASHBOARD);
+  handleRegister(username, password) {
+    // Send credentials to Flask backend
+    fetch('/signup', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        username: username,
+        password: password
+      })
+    })
+    .then(response => response.json())
+    .then(data => {
+      if (data.success) {
+        alert('Account created successfully! Please log in.');
+        this.changeView(AppView.AUTH);
+      } else {
+        alert('Registration failed: ' + (data.error || 'Please try again'));
+      }
+    })
+    .catch(error => {
+      console.error('Register error:', error);
+      alert('Network error: Could not reach server');
+    });
+  }
+
+  handleLogin(username, password) {
+    // Send credentials to Flask backend
+    fetch('/login', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        username: username,
+        password: password
+      })
+    })
+    .then(response => response.json())
+    .then(data => {
+      if (data.success) {
+        // Update user info from response if available
+        if (data.user) {
+          this.user = { ...this.user, ...data.user };
+        }
+        this.user.name = username;
+        this.changeView(AppView.DASHBOARD);
+      } else {
+        alert('Login failed: ' + (data.error || 'Invalid credentials'));
+      }
+    })
+    .catch(error => {
+      console.error('Login error:', error);
+      alert('Network error: Could not reach server');
+    });
   }
 
   handleQuestionsGenerated(generatedQuestions, config) {
@@ -96,15 +151,18 @@ class QuizbyApp {
       case AppView.SPLASH:
         viewContent = SplashView();
         break;
+      case AppView.HOME:
+        app.innerHTML = HomeView();
+        break;  
       case AppView.AUTH:
         viewContent = AuthView(
-          () => this.handleLogin(),
+          (username, password) => this.handleLogin(username, password),
           () => this.changeView(AppView.REGISTER)
         );
         break;
       case AppView.REGISTER:
         viewContent = RegisterView(
-          () => this.handleLogin(),
+          (username, password) => this.handleRegister(username, password),
           () => this.changeView(AppView.AUTH)
         );
         break;

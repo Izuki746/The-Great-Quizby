@@ -1,6 +1,6 @@
 // Create Quiz View
-import { Button } from '../components/Button.js';
-import { generateQuizQuestions } from '../js/quizService.js';
+import { Button } from './Button.js';
+import { generateQuizQuestions } from './quizService.js';
 
 export function CreateQuizView(onQuestionsGenerated) {
   let isLoading = false;
@@ -45,7 +45,10 @@ export function CreateQuizView(onQuestionsGenerated) {
         try {
           const config = { topic, difficulty, questionCount: 5 };
           const questions = await generateQuizQuestions(config);
-          onQuestionsGenerated(questions, config);
+          fetch('/generate-quiz',{
+            method:'POST',
+            body: JSON.stringify(config)
+          });
         } catch (e) {
           console.error(e);
           alert("Error generating quiz. Please try again.");

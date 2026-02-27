@@ -1,5 +1,5 @@
 // Layout Component - Header and Footer wrapper
-import { AppView } from '../js/app.js';
+import { AppView } from './app.js';
 
 export function Layout(children, currentView, user, onChangeView, onLogout) {
   return `

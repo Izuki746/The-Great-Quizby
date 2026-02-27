@@ -1,6 +1,6 @@
 // Quick Match View
-import { Button } from '../components/Button.js';
-import { generateQuizQuestions } from '../js/quizService.js';
+import { Button } from './Button.js';
+import { generateQuizQuestions } from './quizService.js';
 
 export function QuickMatchView(onQuestionsGenerated, onBack) {
   let isLoading = false;

@@ -8,6 +8,14 @@
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
+tailwind.config = {
+  darkMode: 'class'
+}
+</script>
+<script src="{{ url_for('static', filename='login.js') }}"></script>
+    
+    <script>
+
       tailwind.config = {
         darkMode: 'class',
         theme: {
@@ -91,6 +99,13 @@
 </head>
 <body>
     <div id="root"></div>
-    <script src="./js/app.js" type="module"></script>
+    <script src="{{ url_for('static', filename='app.js')}}" type="module"></script>
+
+    <h2>Available Quizzes</h2>
+<div id="quizList"></div>
+
+<hr>
+
+<div id="quizContainer"></div>
 </body>
 </html>

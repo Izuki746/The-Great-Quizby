@@ -1,21 +1,23 @@
-// Auth View
-import { Button } from '../components/Button.js';
+// Register View
+import { Button } from './Button.js';
 
-export function AuthView(onLogin, onRegisterClick) {
+export function RegisterView(onRegister, onLoginClick) {
   setTimeout(() => {
-    const form = document.getElementById('auth-form');
+    const form = document.getElementById('register-form');
     if (form) {
       form.addEventListener('submit', (e) => {
         e.preventDefault();
-        onLogin();
+        const username = document.getElementById('register-username').value;
+        const password = document.getElementById('register-password').value;
+        onRegister(username, password);
       });
     }
 
-    const registerBtn = document.getElementById('register-btn');
-    if (registerBtn) {
-      registerBtn.addEventListener('click', (e) => {
+    const loginBtn = document.getElementById('login-btn');
+    if (loginBtn) {
+      loginBtn.addEventListener('click', (e) => {
         e.preventDefault();
-        onRegisterClick();
+        onLoginClick();
       });
     }
   }, 0);
@@ -38,20 +40,32 @@ export function AuthView(onLogin, onRegisterClick) {
         <div class="glass-card rounded-2xl p-8 sm:p-12 border-t border-primary/40 shadow-2xl">
           <div class="mb-10 text-center flex flex-col items-center">
              <div class="w-16 h-16 rounded-full bg-primary/20 flex items-center justify-center mb-4 border border-primary/30 shadow-[0_0_20px_rgba(238,140,43,0.3)]">
-                <span class="material-symbols-outlined text-4xl text-primary">fingerprint</span>
+                <span class="material-symbols-outlined text-4xl text-primary">person_add</span>
              </div>
-             <h1 class="text-3xl font-bold text-white mb-2 font-display">The Great Quizby</h1>
-             <p class="text-gray-400 text-xs font-bold uppercase tracking-widest">University of Manchester Tech Quiz</p>
+             <h1 class="text-3xl font-bold text-white mb-2 font-display">Create Account</h1>
+             <p class="text-gray-400 text-xs font-bold uppercase tracking-widest">Join The Great Quizby</p>
           </div>
 
-          <form id="auth-form" class="space-y-6">
+          <form id="register-form" class="space-y-6">
             <div class="space-y-2">
-              <label class="text-xs font-bold text-primary uppercase tracking-[0.15em] ml-1">University ID</label>
+              <label class="text-xs font-bold text-primary uppercase tracking-[0.15em] ml-1">Full Name</label>
               <div class="relative group">
                 <input 
                   type="text" 
-                  id="email"
-                  placeholder="student@manchester.ac.uk"
+                  placeholder="John Doe"
+                  class="w-full bg-[#0d0214]/60 border border-uom-purple/50 text-white rounded-xl p-4 pl-12 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all placeholder:text-gray-600"
+                />
+                <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-primary transition-colors">badge</span>
+              </div>
+            </div>
+
+            <div class="space-y-2">
+              <label class="text-xs font-bold text-primary uppercase tracking-[0.15em] ml-1">Username</label>
+              <div class="relative group">
+                <input 
+                  type="text" 
+                  id="register-username"
+                  placeholder="your_username"
                   class="w-full bg-[#0d0214]/60 border border-uom-purple/50 text-white rounded-xl p-4 pl-12 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all placeholder:text-gray-600"
                 />
                 <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-primary transition-colors">person</span>
@@ -63,7 +77,7 @@ export function AuthView(onLogin, onRegisterClick) {
               <div class="relative group">
                 <input 
                   type="password" 
-                  id="password"
+                  id="register-password"
                   placeholder="••••••••"
                   class="w-full bg-[#0d0214]/60 border border-uom-purple/50 text-white rounded-xl p-4 pl-12 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all placeholder:text-gray-600"
                 />
@@ -71,17 +85,13 @@ export function AuthView(onLogin, onRegisterClick) {
               </div>
             </div>
 
-            <div class="flex justify-end">
-               <a href="#" class="text-xs font-bold text-primary/80 hover:text-primary">Forgot Password?</a>
-            </div>
-
             ${Button({
               type: 'submit',
               className: 'w-full text-lg py-4',
               children: `
                 <span class="flex items-center gap-2">
-                  <span class="material-symbols-outlined">login</span>
-                  LOGIN
+                  <span class="material-symbols-outlined">how_to_reg</span>
+                  CREATE ACCOUNT
                 </span>
               `
             })}
@@ -90,15 +100,15 @@ export function AuthView(onLogin, onRegisterClick) {
           <div class="relative my-8">
              <div class="absolute inset-0 flex items-center"><div class="w-full border-t border-white/10"></div></div>
              <div class="relative flex justify-center">
-                <span class="bg-[#1a0524] px-4 text-[10px] font-black text-uom-purple uppercase tracking-[0.2em] border border-uom-purple/40 rounded-full">Secure Auth</span>
+                <span class="bg-[#1a0524] px-4 text-[10px] font-black text-uom-purple uppercase tracking-[0.2em] border border-uom-purple/40 rounded-full">New Account</span>
              </div>
           </div>
 
           <div class="text-center">
              <p class="text-sm text-gray-400">
-               New student? 
-               <button id="register-btn" class="font-bold text-white hover:text-primary ml-1 underline underline-offset-4 decoration-primary/50">
-                 Create account
+               Already registered? 
+               <button id="login-btn" class="font-bold text-white hover:text-primary ml-1 underline underline-offset-4 decoration-primary/50">
+                 Sign in
                </button>
              </p>
           </div>

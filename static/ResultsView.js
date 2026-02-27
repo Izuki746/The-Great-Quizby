@@ -1,5 +1,5 @@
 // Results View
-import { Button } from '../components/Button.js';
+import { Button } from './Button.js';
 
 export function ResultsView(result, onViewChange) {
   const accuracy = Math.round((result.correctAnswers / result.totalQuestions) * 100);

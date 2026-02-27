@@ -1,5 +1,5 @@
 // Play Quiz View
-import { Button } from '../components/Button.js';
+import { Button } from './Button.js';
 
 export function PlayQuizView(questions, config, onComplete) {
   let currentIndex = 0;

@@ -1,5 +1,5 @@
 // Dashboard View
-import { Button } from '../components/Button.js';
+import { Button } from './Button.js';
 
 export function DashboardView(onViewChange) {
   const categories = [

@@ -2,7 +2,7 @@
 
 This is a complete conversion of the React + TypeScript Quizby application to pure HTML, CSS, and JavaScript.
 
-## 🎯 What Was Converted
+##  What Was Converted
 
 ### Original Stack
 - React 19 + TypeScript
@@ -16,7 +16,7 @@ This is a complete conversion of the React + TypeScript Quizby application to pu
 - CSS3 with Tailwind CSS (via CDN)
 - SVG for data visualization (replaced Recharts)
 
-## 📂 Project Structure
+##  Project Structure
 
 ```
 quizby-vanilla/
