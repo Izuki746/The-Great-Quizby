@@ -2,7 +2,7 @@
 import { Button } from './Button.js';
 import { generateQuizQuestions } from './quizService.js';
 
-export function CreateQuizView(onQuestionsGenerated) {
+export function CreateQuizView(onQuestionsGenerated, onBack) {
   let isLoading = false;
   let topic = '';
   let difficulty = 'Undergrad';
@@ -11,6 +11,13 @@ export function CreateQuizView(onQuestionsGenerated) {
     const topicInput = document.getElementById('quiz-topic');
     const generateBtn = document.getElementById('generate-btn');
     const difficultyBtns = document.querySelectorAll('.difficulty-btn');
+    const backBtn = document.getElementById('back-btn');
+
+    if (backBtn) {
+      backBtn.addEventListener('click', () => {
+        onBack();
+      });
+    }
 
     if (topicInput) {
       topicInput.addEventListener('input', (e) => {
@@ -21,15 +28,42 @@ export function CreateQuizView(onQuestionsGenerated) {
       });
     }
 
-    difficultyBtns.forEach(btn => {
-      btn.addEventListener('click', () => {
-        difficulty = btn.dataset.level;
-        difficultyBtns.forEach(b => {
-          b.className = b.className.replace(/border-primary bg-primary\/20 text-primary/, 'border-primary/20 bg-[#1a102b]/50 text-slate-500 hover:text-slate-300 hover:border-primary/40');
-        });
-        btn.className = btn.className.replace(/border-primary\/20 bg-\[#1a102b\]\/50 text-slate-500 hover:text-slate-300 hover:border-primary\/40/, 'border-primary bg-primary/20 text-primary');
-      });
+difficultyBtns.forEach(btn => {
+  btn.addEventListener('click', () => {
+    difficulty = btn.dataset.level;
+
+    // Reset all buttons
+    difficultyBtns.forEach(b => {
+      b.classList.remove(
+        'border-primary',
+        'bg-primary/20',
+        'text-primary'
+      );
+      b.classList.add(
+        'border-primary/20',
+        'bg-[#1a102b]/50',
+        'text-slate-500',
+        'hover:text-slate-300',
+        'hover:border-primary/40'
+      );
     });
+
+    // Activate selected button
+    btn.classList.remove(
+      'border-primary/20',
+      'bg-[#1a102b]/50',
+      'text-slate-500',
+      'hover:text-slate-300',
+      'hover:border-primary/40'
+    );
+    btn.classList.add(
+      'border-primary',
+      'bg-primary/20',
+      'text-primary'
+    );
+  });
+});
+
 
     if (generateBtn) {
       generateBtn.addEventListener('click', async () => {
@@ -45,10 +79,7 @@ export function CreateQuizView(onQuestionsGenerated) {
         try {
           const config = { topic, difficulty, questionCount: 5 };
           const questions = await generateQuizQuestions(config);
-          fetch('/generate-quiz',{
-            method:'POST',
-            body: JSON.stringify(config)
-          });
+          onQuestionsGenerated(questions, config);
         } catch (e) {
           console.error(e);
           alert("Error generating quiz. Please try again.");
@@ -65,6 +96,16 @@ export function CreateQuizView(onQuestionsGenerated) {
 
   return `
     <div class="flex-1 flex flex-col items-center justify-center p-4">
+
+      <!-- Back Button -->
+      <button 
+        id="back-btn"
+        class="absolute top-6 left-6 px-4 py-2 rounded-lg bg-[#1a102b]/70 border border-primary/30 text-primary font-bold flex items-center gap-2 hover:bg-primary/20 transition-all"
+      >
+        <span class="material-symbols-outlined">arrow_back</span>
+        Back
+      </button>
+
       <div class="w-full max-w-4xl flex flex-col gap-8 animate-fade-in">
          <!-- Header -->
          <div class="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-white/10 pb-8">
