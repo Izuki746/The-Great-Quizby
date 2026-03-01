@@ -175,7 +175,7 @@ class QuizbyApp {
         break;
       case AppView.CREATE_QUIZ:
         viewContent = CreateQuizView(
-          (questions, config) => this.handleQuestionsGenerated(questions, config),
+         (questions) => this.handleQuestionsGenerated(questions, { manual: true }),
           () => this.changeView(AppView.DASHBOARD)
         );
         break;
