@@ -1,6 +1,7 @@
 from flask import Flask, jsonify, request, session, render_template
 from werkzeug.security import generate_password_hash, check_password_hash
 import sqlite3
+import re
 
 app = Flask(__name__)
 app.secret_key = "super-secret-key"
@@ -15,12 +16,15 @@ def get_db():
 @app.route("/signup", methods=["POST"])
 def signup():
     data = request.get_json()
-    username = data.get("username")
-    password = data.get("password")
-    if username is None:
-         return jsonify({"success": False,"error":"Please enter a Valid username"})
-    if " " in username:
-        return jsonify({"success":False, "error":"Username must not contain spaces"})    
+    username = data.get("username", "").strip()
+    password = data.get("password", "").strip()
+    if not username or not password:
+        return "Username and password required" 
+    if not re.match("^[A-Za-z0-9_]+$", username):
+        return jsonify({
+        "success": False,
+        "error": "Username can only contain letters, numbers, and underscores"
+    })  
     if len(password)<8 :
         return jsonify({"success": False,"error":"Password is too short, Password must be 8 characters "})
     if " " in password:
@@ -32,7 +36,7 @@ def signup():
     try:
         conn = get_db()
         cursor = conn.cursor()
-
+        
         cursor.execute(
             "INSERT INTO users (username, password_hash) VALUES (?, ?)",
             (username, password_hash)
@@ -50,8 +54,8 @@ def signup():
 @app.route("/login", methods=['POST'])
 def login():
     data = request.get_json()
-    username = data.get('username')
-    password = data.get('password')
+    username = data.get('username', "").strip()
+    password = data.get('password', "").strip()
 
     # Get user from database
     conn = get_db()
@@ -60,22 +64,15 @@ def login():
     cursor.execute(
         "SELECT id, username, password_hash FROM users WHERE username = ?",
         (username,)
-    )
-    cursor.execute(
-        "DELETE FROM users WHERE username = ' ' AND password_hash =' '"
-    )
+    ) 
+
     user = cursor.fetchone()
     conn.close()
-
-    # Check if user exists and password matches
-    if username is None:
-        return jsonify({"success": False,"error":"Please enter a Valid username"})
-    if password is None:
-         return jsonify({"success": False,"error":"Please enter a Valid password"})
+    # Check if user exists and password matches 
     if user and check_password_hash(user[2], password):
         session["user_id"] = user[0]
         session["user"] = user[1]
-        return jsonify({"success": True})
+        return jsonify({"success": True, "eorror":"login completes"})
     else:
         return jsonify({"success": False, "error": "Invalid credentials"})
 
