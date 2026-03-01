@@ -127,6 +127,23 @@ class QuizbyApp {
     this.currentConfig = config;
     this.changeView(AppView.PLAY_QUIZ);
   }
+  handleManualQuizSave(quiz) {
+  if (!this.user.quizzes) {
+    this.user.quizzes = [];
+  }
+
+  this.user.quizzes.push({
+    name: quiz.name,
+    createdAt: new Date().toISOString(),
+    questions: quiz.questions
+  });
+
+  this.user.totalQuizzes = this.user.quizzes.length;
+
+  alert("Your quiz has been saved!");
+  this.changeView(AppView.DASHBOARD);
+}
+
 
   handleQuizComplete(result) {
     this.lastResult = result;
@@ -175,7 +192,7 @@ class QuizbyApp {
         break;
       case AppView.CREATE_QUIZ:
         viewContent = CreateQuizView(
-         (questions) => this.handleQuestionsGenerated(questions, { manual: true }),
+         (questions) => this.handleManualQuizSave(questions),
           () => this.changeView(AppView.DASHBOARD)
         );
         break;

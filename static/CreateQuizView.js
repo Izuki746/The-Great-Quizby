@@ -1,6 +1,4 @@
 export function CreateQuizView(onSaveQuiz, onBack) {
-  let questions = [];
-
   setTimeout(() => {
     const addBtn = document.getElementById("add-question-btn");
     const saveBtn = document.getElementById("save-quiz-btn");
@@ -10,38 +8,45 @@ export function CreateQuizView(onSaveQuiz, onBack) {
       backBtn.addEventListener("click", () => onBack());
     }
 
+    // 添加题目
     if (addBtn) {
       addBtn.addEventListener("click", () => {
         const container = document.getElementById("question-container");
 
-        const index = questions.length;
+        const id = Date.now(); // 唯一 ID
 
         const card = document.createElement("div");
-        card.className = "glass-card p-4 rounded-xl text-white space-y-3";
+        card.className = "glass-card p-4 rounded-xl text-white space-y-3 relative";
+        card.setAttribute("data-id", id);
+
         card.innerHTML = `
-          <h3 class="font-bold text-lg">Question ${index + 1}</h3>
+          <button class="delete-question absolute top-3 right-3 text-red-400 hover:text-red-600">
+            <span class="material-symbols-outlined">delete</span>
+          </button>
+
+          <h3 class="font-bold text-lg">Question</h3>
 
           <input class="w-full p-3 rounded bg-[#1a102b]/50"
-                 placeholder="Enter question text"
-                 id="q-${index}">
+                placeholder="Enter question text"
+                id="q-${id}">
 
           <input class="w-full p-3 rounded bg-[#1a102b]/50"
-                 placeholder="Option A"
-                 id="q-${index}-a">
+                placeholder="Option A"
+                id="q-${id}-a">
 
           <input class="w-full p-3 rounded bg-[#1a102b]/50"
-                 placeholder="Option B"
-                 id="q-${index}-b">
+                placeholder="Option B"
+                id="q-${id}-b">
 
           <input class="w-full p-3 rounded bg-[#1a102b]/50"
-                 placeholder="Option C"
-                 id="q-${index}-c">
+                placeholder="Option C"
+                id="q-${id}-c">
 
           <input class="w-full p-3 rounded bg-[#1a102b]/50"
-                 placeholder="Option D"
-                 id="q-${index}-d">
+                placeholder="Option D"
+                id="q-${id}-d">
 
-          <select id="q-${index}-correct"
+          <select id="q-${id}-correct"
                   class="w-full p-3 rounded bg-[#1a102b]/50">
             <option value="0">Correct Answer: A</option>
             <option value="1">Correct Answer: B</option>
@@ -52,24 +57,39 @@ export function CreateQuizView(onSaveQuiz, onBack) {
 
         container.appendChild(card);
 
-        questions.push({}); // 占位，保存数量
+        // 删除按钮
+        card.querySelector(".delete-question").addEventListener("click", () => {
+          card.remove();
+        });
       });
     }
 
+    // 保存题目
     if (saveBtn) {
       saveBtn.addEventListener("click", () => {
+        const quizName = document.getElementById("quiz-name-input").value.trim();
+        if (!quizName) {
+          alert("Please enter a quiz name.");
+          return;
+        }
+
+        const container = document.getElementById("question-container");
+        const cards = container.querySelectorAll("[data-id]");
+
         const finalQuestions = [];
 
-        for (let i = 0; i < questions.length; i++) {
-          const qText = document.getElementById(`q-${i}`).value.trim();
-          const optA = document.getElementById(`q-${i}-a`).value.trim();
-          const optB = document.getElementById(`q-${i}-b`).value.trim();
-          const optC = document.getElementById(`q-${i}-c`).value.trim();
-          const optD = document.getElementById(`q-${i}-d`).value.trim();
-          const correct = document.getElementById(`q-${i}-correct`).value;
+        cards.forEach((card) => {
+          const id = card.getAttribute("data-id");
+
+          const qText = document.getElementById(`q-${id}`).value.trim();
+          const optA = document.getElementById(`q-${id}-a`).value.trim();
+          const optB = document.getElementById(`q-${id}-b`).value.trim();
+          const optC = document.getElementById(`q-${id}-c`).value.trim();
+          const optD = document.getElementById(`q-${id}-d`).value.trim();
+          const correct = document.getElementById(`q-${id}-correct`).value;
 
           if (!qText || !optA || !optB || !optC || !optD) {
-            alert(`Question ${i + 1} is incomplete.`);
+            alert("Please complete all fields before saving.");
             return;
           }
 
@@ -78,9 +98,12 @@ export function CreateQuizView(onSaveQuiz, onBack) {
             options: [optA, optB, optC, optD],
             answer: Number(correct)
           });
-        }
+        });
 
-        onSaveQuiz(finalQuestions);
+        onSaveQuiz({
+          name: quizName,
+          questions: finalQuestions
+        });
       });
     }
   }, 0);
@@ -95,6 +118,10 @@ export function CreateQuizView(onSaveQuiz, onBack) {
       </button>
 
       <h1 class="text-4xl font-bold text-white mb-6">Create Quiz (Manual)</h1>
+
+      <input id="quiz-name-input"
+        class="w-full max-w-3xl p-3 mb-4 rounded-xl bg-[#1a102b]/50 text-white"
+        placeholder="Enter quiz name">
 
       <div id="question-container" class="w-full max-w-3xl space-y-6"></div>
 

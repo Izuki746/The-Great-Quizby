@@ -45,7 +45,38 @@ export function ProfileView(user) {
        </div>
 
        <div class="max-w-[960px] mx-auto py-8 px-4">
+
+          <!-- My Quizzes Section -->
           <h2 class="text-2xl font-bold text-white mb-6 flex items-center gap-3">
+             <span class="material-symbols-outlined text-primary">folder_special</span>
+             My Quizzes
+          </h2>
+
+          <div class="space-y-4">
+            ${
+              user.quizzes && user.quizzes.length > 0
+                ? user.quizzes
+                    .map(
+                      (q, i) => `
+              <div class="glass-card rounded-xl p-5 flex justify-between items-center">
+                <div>
+                  <p class="text-white font-bold text-lg">${q.name}</p>
+                  <p class="text-slate-400 text-sm">${q.questions.length} Questions</p>
+                  <p class="text-slate-500 text-xs mt-1">${new Date(q.createdAt).toLocaleDateString()}</p>
+                </div>
+
+                <button class="text-primary hover:text-white" data-quiz-index="${i}">
+                  <span class="material-symbols-outlined text-3xl">visibility</span>
+                </button>
+              </div>
+            `
+                    )
+                    .join("")
+                : `<p class="text-slate-500">You haven't created any quizzes yet.</p>`
+            }
+          </div>
+
+          <h2 class="text-2xl font-bold text-white mb-6 flex items-center gap-3 mt-10">
              <span class="material-symbols-outlined text-primary">history</span>
              Recent Activity
           </h2>
