@@ -66,15 +66,22 @@ export function ProfileView(user) {
                 </div>
 
                 <div class="flex items-center gap-4">
+
                   <!-- Preview -->
                   <button class="text-primary hover:text-white" data-quiz-index="${i}">
                     <span class="material-symbols-outlined text-3xl">visibility</span>
+                  </button>
+
+                  <!-- Edit -->
+                  <button class="text-yellow-400 hover:text-yellow-600" data-edit-index="${i}">
+                    <span class="material-symbols-outlined text-3xl">edit</span>
                   </button>
 
                   <!-- Delete -->
                   <button class="text-red-400 hover:text-red-600" data-delete-index="${i}">
                     <span class="material-symbols-outlined text-3xl">delete</span>
                   </button>
+
                 </div>
               </div>
             `

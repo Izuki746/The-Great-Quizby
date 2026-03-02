@@ -46,9 +46,11 @@ class QuizbyApp {
     this.currentConfig = null;
     this.lastResult = null;
     this.user = { ...INITIAL_USER };
-    this.previewQuiz = null;   // ⭐ 新增
+
+    this.previewQuiz = null;        // ⭐ 用于 Preview 和 Edit
+    this.editingQuizIndex = null;   // ⭐ 用于 Edit
+
     this.rootElement = document.getElementById('root');
-    
     this.init();
   }
 
@@ -166,7 +168,23 @@ class QuizbyApp {
 
       case AppView.CREATE_QUIZ:
         viewContent = CreateQuizView(
-          (quiz) => this.handleManualQuizSave(quiz),
+          this.previewQuiz,   // ⭐ 如果是编辑模式，这里有 quiz 数据
+          (quiz) => {
+            if (this.editingQuizIndex !== null) {
+              // ⭐ 编辑模式：覆盖原 quiz
+              this.user.quizzes[this.editingQuizIndex] = {
+                ...quiz,
+                createdAt: this.user.quizzes[this.editingQuizIndex].createdAt
+              };
+              this.editingQuizIndex = null;
+              this.previewQuiz = null;
+              alert("Quiz updated!");
+              this.changeView(AppView.PROFILE);
+            } else {
+              // ⭐ 创建模式
+              this.handleManualQuizSave(quiz);
+            }
+          },
           () => this.changeView(AppView.DASHBOARD)
         );
         break;
@@ -187,7 +205,7 @@ class QuizbyApp {
         viewContent = ProfileView(this.user);
         break;
 
-      case AppView.PREVIEW_QUIZ:   // ⭐ 新增
+      case AppView.PREVIEW_QUIZ:
         viewContent = QuizPreviewView(
           this.previewQuiz,
           () => this.changeView(AppView.PROFILE)
@@ -215,7 +233,7 @@ class QuizbyApp {
 
   attachEventListeners() {
 
-    // ⭐ Profile → 点击眼睛按钮进入预览
+    // ⭐ Profile → Preview
     if (this.currentView === AppView.PROFILE) {
       document.querySelectorAll("[data-quiz-index]").forEach(btn => {
         btn.addEventListener("click", () => {
@@ -225,7 +243,17 @@ class QuizbyApp {
         });
       });
 
-      // ⭐ Profile → 删除 Quiz
+      // ⭐ Profile → Edit
+      document.querySelectorAll("[data-edit-index]").forEach(btn => {
+        btn.addEventListener("click", () => {
+          const index = btn.getAttribute("data-edit-index");
+          this.editingQuizIndex = index;
+          this.previewQuiz = this.user.quizzes[index];
+          this.changeView(AppView.CREATE_QUIZ);
+        });
+      });
+
+      // ⭐ Profile → Delete
       document.querySelectorAll("[data-delete-index]").forEach(btn => {
         btn.addEventListener("click", () => {
           const index = btn.getAttribute("data-delete-index");
@@ -236,12 +264,12 @@ class QuizbyApp {
           this.user.quizzes.splice(index, 1);
           this.user.totalQuizzes = this.user.quizzes.length;
 
-          this.changeView(AppView.PROFILE); // 刷新页面
+          this.changeView(AppView.PROFILE);
         });
       });
     }
 
-    // ⭐ Preview → 返回按钮
+    // ⭐ Preview → Back
     if (this.currentView === AppView.PREVIEW_QUIZ) {
       const backBtn = document.getElementById("back-btn");
       if (backBtn) backBtn.addEventListener("click", () => this.changeView(AppView.PROFILE));
