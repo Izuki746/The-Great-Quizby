@@ -10,6 +10,7 @@ import { ResultsView } from './ResultsView.js';
 import { ProfileView } from './ProfileView.js';
 import { Layout } from './Layout.js';
 import { HomeView } from './homeView.js';
+import { QuizPreviewView } from './QuizPreviewView.js';   // ⭐ 新增
 
 // App Views Enum
 const AppView = {
@@ -22,6 +23,7 @@ const AppView = {
   PLAY_QUIZ: 'PLAY_QUIZ',
   RESULTS: 'RESULTS',
   PROFILE: 'PROFILE',
+  PREVIEW_QUIZ: 'PREVIEW_QUIZ',   // ⭐ 新增
 };
 
 // Initial User Profile
@@ -44,16 +46,14 @@ class QuizbyApp {
     this.currentConfig = null;
     this.lastResult = null;
     this.user = { ...INITIAL_USER };
+    this.previewQuiz = null;   // ⭐ 新增
     this.rootElement = document.getElementById('root');
     
     this.init();
   }
 
   init() {
-    // Start with splash screen
     this.render();
-    
-    // Automatically transition to auth after 3.5 seconds
     setTimeout(() => {
       this.changeView(AppView.AUTH);
     }, 3500);
@@ -65,18 +65,12 @@ class QuizbyApp {
   }
 
   handleRegister(username, password) {
-    // Send credentials to Flask backend
     fetch('/signup', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        username: username,
-        password: password
-      })
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, password })
     })
-    .then(response => response.json())
+    .then(r => r.json())
     .then(data => {
       if (data.success) {
         alert('Account created successfully! Please log in.');
@@ -85,41 +79,26 @@ class QuizbyApp {
         alert('Registration failed: ' + (data.error || 'Please try again'));
       }
     })
-    .catch(error => {
-      console.error('Register error:', error);
-      alert('Network error: Could not reach server');
-    });
+    .catch(() => alert('Network error: Could not reach server'));
   }
 
   handleLogin(username, password) {
-    // Send credentials to Flask backend
     fetch('/login', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        username: username,
-        password: password
-      })
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, password })
     })
-    .then(response => response.json())
+    .then(r => r.json())
     .then(data => {
       if (data.success) {
-        // Update user info from response if available
-        if (data.user) {
-          this.user = { ...this.user, ...data.user };
-        }
+        if (data.user) this.user = { ...this.user, ...data.user };
         this.user.name = username;
         this.changeView(AppView.DASHBOARD);
       } else {
         alert('Login failed: ' + (data.error || 'Invalid credentials'));
       }
     })
-    .catch(error => {
-      console.error('Login error:', error);
-      alert('Network error: Could not reach server');
-    });
+    .catch(() => alert('Network error: Could not reach server'));
   }
 
   handleQuestionsGenerated(generatedQuestions, config) {
@@ -127,33 +106,28 @@ class QuizbyApp {
     this.currentConfig = config;
     this.changeView(AppView.PLAY_QUIZ);
   }
+
   handleManualQuizSave(quiz) {
-  if (!this.user.quizzes) {
-    this.user.quizzes = [];
+    if (!this.user.quizzes) this.user.quizzes = [];
+
+    this.user.quizzes.push({
+      name: quiz.name,
+      createdAt: new Date().toISOString(),
+      questions: quiz.questions
+    });
+
+    this.user.totalQuizzes = this.user.quizzes.length;
+
+    alert("Your quiz has been saved!");
+    this.changeView(AppView.DASHBOARD);
   }
-
-  this.user.quizzes.push({
-    name: quiz.name,
-    createdAt: new Date().toISOString(),
-    questions: quiz.questions
-  });
-
-  this.user.totalQuizzes = this.user.quizzes.length;
-
-  alert("Your quiz has been saved!");
-  this.changeView(AppView.DASHBOARD);
-}
-
 
   handleQuizComplete(result) {
     this.lastResult = result;
-    
-    // Update user stats
     this.user.totalQuizzes += 1;
     this.user.points += result.score;
-    this.user.streak = result.streak > this.user.streak ? result.streak : this.user.streak;
+    this.user.streak = Math.max(this.user.streak, result.streak);
     this.user.level = Math.floor(this.user.points / 500) + 1;
-    
     this.changeView(AppView.RESULTS);
   }
 
@@ -168,60 +142,62 @@ class QuizbyApp {
       case AppView.SPLASH:
         viewContent = SplashView();
         break;
-      case AppView.HOME:
-        app.innerHTML = HomeView();
-        break;  
+
       case AppView.AUTH:
         viewContent = AuthView(
-          (username, password) => this.handleLogin(username, password),
+          (u, p) => this.handleLogin(u, p),
           () => this.changeView(AppView.REGISTER)
         );
         break;
+
       case AppView.REGISTER:
         viewContent = RegisterView(
-          (username, password) => this.handleRegister(username, password),
+          (u, p) => this.handleRegister(u, p),
           () => this.changeView(AppView.AUTH)
         );
         break;
+
       case AppView.DASHBOARD:
         viewContent = DashboardView(
           (view) => this.changeView(view),
-          // Add a callback for generating questions
-          (questions, config) => this.handleQuestionsGenerated(questions, config)
+          (q, c) => this.handleQuestionsGenerated(q, c)
         );
         break;
+
       case AppView.CREATE_QUIZ:
         viewContent = CreateQuizView(
-         (questions) => this.handleManualQuizSave(questions),
+          (quiz) => this.handleManualQuizSave(quiz),
           () => this.changeView(AppView.DASHBOARD)
         );
         break;
+
       case AppView.PLAY_QUIZ:
-        if (!this.currentConfig || this.questions.length === 0) {
-          viewContent = DashboardView((view) => this.changeView(view));
-        } else {
-          viewContent = PlayQuizView(
-            this.questions,
-            this.currentConfig,
-            (result) => this.handleQuizComplete(result)
-          );
-        }
+        viewContent = PlayQuizView(
+          this.questions,
+          this.currentConfig,
+          (result) => this.handleQuizComplete(result)
+        );
         break;
+
       case AppView.RESULTS:
-        if (!this.lastResult) {
-          viewContent = DashboardView((view) => this.changeView(view));
-        } else {
-          viewContent = ResultsView(this.lastResult, (view) => this.changeView(view));
-        }
+        viewContent = ResultsView(this.lastResult, (v) => this.changeView(v));
         break;
+
       case AppView.PROFILE:
         viewContent = ProfileView(this.user);
         break;
+
+      case AppView.PREVIEW_QUIZ:   // ⭐ 新增
+        viewContent = QuizPreviewView(
+          this.previewQuiz,
+          () => this.changeView(AppView.PROFILE)
+        );
+        break;
+
       default:
-        viewContent = DashboardView((view) => this.changeView(view));
+        viewContent = DashboardView((v) => this.changeView(v));
     }
 
-    // Wrap in layout if not splash/auth/register
     if ([AppView.SPLASH, AppView.AUTH, AppView.REGISTER].includes(this.currentView)) {
       this.rootElement.innerHTML = viewContent;
     } else {
@@ -229,25 +205,37 @@ class QuizbyApp {
         viewContent,
         this.currentView,
         this.user,
-        (view) => this.changeView(view),
+        (v) => this.changeView(v),
         () => this.handleLogout()
       );
     }
 
-    // Attach event listeners after render
     this.attachEventListeners();
   }
 
   attachEventListeners() {
-    // This will be called after each render to re-attach event listeners
-    // Specific view event listeners are handled in their respective view files
+
+    // ⭐ Profile → 点击眼睛按钮进入预览
+    if (this.currentView === AppView.PROFILE) {
+      document.querySelectorAll("[data-quiz-index]").forEach(btn => {
+        btn.addEventListener("click", () => {
+          const index = btn.getAttribute("data-quiz-index");
+          this.previewQuiz = this.user.quizzes[index];
+          this.changeView(AppView.PREVIEW_QUIZ);
+        });
+      });
+    }
+
+    // ⭐ Preview → 返回按钮
+    if (this.currentView === AppView.PREVIEW_QUIZ) {
+      const backBtn = document.getElementById("back-btn");
+      if (backBtn) backBtn.addEventListener("click", () => this.changeView(AppView.PROFILE));
+    }
   }
 }
 
-// Export AppView for use in other modules
 export { AppView };
 
-// Initialize app when DOM is loaded
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', () => {
     window.quizbyApp = new QuizbyApp();
