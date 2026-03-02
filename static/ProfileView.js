@@ -65,9 +65,17 @@ export function ProfileView(user) {
                   <p class="text-slate-500 text-xs mt-1">${new Date(q.createdAt).toLocaleDateString()}</p>
                 </div>
 
-                <button class="text-primary hover:text-white" data-quiz-index="${i}">
-                  <span class="material-symbols-outlined text-3xl">visibility</span>
-                </button>
+                <div class="flex items-center gap-4">
+                  <!-- Preview -->
+                  <button class="text-primary hover:text-white" data-quiz-index="${i}">
+                    <span class="material-symbols-outlined text-3xl">visibility</span>
+                  </button>
+
+                  <!-- Delete -->
+                  <button class="text-red-400 hover:text-red-600" data-delete-index="${i}">
+                    <span class="material-symbols-outlined text-3xl">delete</span>
+                  </button>
+                </div>
               </div>
             `
                     )

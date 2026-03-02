@@ -224,6 +224,21 @@ class QuizbyApp {
           this.changeView(AppView.PREVIEW_QUIZ);
         });
       });
+
+      // ⭐ Profile → 删除 Quiz
+      document.querySelectorAll("[data-delete-index]").forEach(btn => {
+        btn.addEventListener("click", () => {
+          const index = btn.getAttribute("data-delete-index");
+
+          const confirmDelete = confirm("Are you sure you want to delete this quiz?");
+          if (!confirmDelete) return;
+
+          this.user.quizzes.splice(index, 1);
+          this.user.totalQuizzes = this.user.quizzes.length;
+
+          this.changeView(AppView.PROFILE); // 刷新页面
+        });
+      });
     }
 
     // ⭐ Preview → 返回按钮
