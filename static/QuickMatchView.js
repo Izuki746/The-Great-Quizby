@@ -1,4 +1,4 @@
-// Quick Match View
+// static/QuickMatchView.js
 import { Button } from './Button.js';
 import { generateQuizQuestions } from './quizService.js';
 
@@ -6,13 +6,12 @@ export function QuickMatchView(onQuestionsGenerated, onBack) {
   let isLoading = false;
   let loadingText = 'Initializing...';
 
-  const quickCategories = [
-    { id: 'tech', name: 'Tech & Coding', icon: 'terminal', color: 'from-blue-500/20 to-cyan-500/20', borderColor: 'group-hover:border-blue-500', iconColor: 'text-blue-400', topic: 'Modern Web Development and System Architecture' },
-    { id: 'science', name: 'Deep Science', icon: 'science', color: 'from-emerald-500/20 to-teal-500/20', borderColor: 'group-hover:border-emerald-500', iconColor: 'text-emerald-400', topic: 'Quantum Physics and Molecular Biology Foundations' },
-    { id: 'humanities', name: 'Humanities', icon: 'menu_book', color: 'from-amber-500/20 to-orange-500/20', borderColor: 'group-hover:border-amber-500', iconColor: 'text-amber-400', topic: 'Philosophy and Global Sociology' },
-    { id: 'arts', name: 'Creative Arts', icon: 'palette', color: 'from-pink-500/20 to-rose-500/20', borderColor: 'group-hover:border-pink-500', iconColor: 'text-pink-400', topic: 'Post-Modern Art History and Design Principles' },
-    { id: 'math', name: 'Mathematics', icon: 'functions', color: 'from-indigo-500/20 to-purple-500/20', borderColor: 'group-hover:border-indigo-500', iconColor: 'text-indigo-400', topic: 'Advanced Calculus and Statistics' },
-    { id: 'business', name: 'Economics', icon: 'payments', color: 'from-slate-500/20 to-gray-500/20', borderColor: 'group-hover:border-white', iconColor: 'text-slate-300', topic: 'Global Macroeconomics and Finance' },
+  // 从主页迁移过来的 categories 数据，并加上 topic 以便于生成对应题目
+  const categories = [
+    { name: 'World Culture', icon: 'public', players: '1.5k', color: 'text-blue-400', img: 'https://images.unsplash.com/photo-1521295121783-8a321d551ad2?auto=format&fit=crop&q=80&w=400', topic: 'World Culture' },
+    { name: 'Cinema & TV', icon: 'movie', players: '2.3k', color: 'text-pink-400', img: 'https://images.unsplash.com/photo-1485846234645-a62644f84728?auto=format&fit=crop&q=80&w=400', topic: 'Cinema & TV' },
+    { name: 'Food & Drink', icon: 'restaurant', players: '3.1k', color: 'text-orange-400', img: 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&q=80&w=400', topic: 'Food & Drink' },
+    { name: 'Global History', icon: 'history_edu', players: '980', color: 'text-yellow-400', img: 'https://images.unsplash.com/photo-1461360346148-3470a5d6e241?auto=format&fit=crop&q=80&w=400', topic: 'Global History' },
   ];
 
   const handleSelect = async (topic) => {
@@ -22,7 +21,7 @@ export function QuickMatchView(onQuestionsGenerated, onBack) {
 
     const config = {
       topic,
-      difficulty: 'Undergrad',
+      difficulty: 'Standard',
       questionCount: 5
     };
 
@@ -38,33 +37,19 @@ export function QuickMatchView(onQuestionsGenerated, onBack) {
     }
   };
 
-  const handleSurpriseMe = () => {
-    const topics = [
-      'The History of Space Exploration',
-      'Artificial General Intelligence Ethics',
-      'Ancient Roman Engineering',
-      'Marine Biology: Deep Sea Abyss',
-      'Cybersecurity: Cryptography Foundations'
-    ];
-    handleSelect(topics[Math.floor(Math.random() * topics.length)]);
-  };
-
   setTimeout(() => {
     const backBtn = document.getElementById('quick-back-btn');
     if (backBtn) {
       backBtn.addEventListener('click', onBack);
     }
 
-    document.querySelectorAll('.category-select').forEach((btn, idx) => {
-      btn.addEventListener('click', () => handleSelect(quickCategories[idx].topic));
+    // 给新的分类卡片绑定点击事件
+    document.querySelectorAll('.category-card').forEach((card, idx) => {
+      card.addEventListener('click', () => handleSelect(categories[idx].topic));
     });
-
-    const surpriseBtn = document.getElementById('surprise-btn');
-    if (surpriseBtn) {
-      surpriseBtn.addEventListener('click', handleSurpriseMe);
-    }
   }, 0);
 
+  // 题目加载动画
   if (isLoading) {
     return `
       <div class="flex-1 flex flex-col items-center justify-center p-6 max-w-5xl mx-auto w-full">
@@ -83,13 +68,14 @@ export function QuickMatchView(onQuestionsGenerated, onBack) {
     `;
   }
 
+  // 渲染迁移过来的分类卡片
   return `
-    <div class="flex-1 flex flex-col items-center justify-center p-6 max-w-5xl mx-auto w-full">
-      <div class="w-full space-y-8 animate-fade-in">
-         <div class="flex items-center justify-between">
+    <div class="flex-1 flex flex-col items-center p-6 md:p-12 max-w-7xl mx-auto w-full">
+      <div class="w-full space-y-8 animate-fade-in mt-8">
+         <div class="flex items-center justify-between mb-6">
             <div>
-              <h1 class="text-3xl font-bold text-white font-display">Select Challenge</h1>
-              <p class="text-slate-400 mt-1">Choose a category to start your rapid assessment</p>
+              <h1 class="text-3xl font-bold text-white font-display">Trending Categories</h1>
+              <p class="text-slate-400 mt-1">Explore popular topics right now</p>
             </div>
             ${Button({
               variant: 'ghost',
@@ -99,41 +85,18 @@ export function QuickMatchView(onQuestionsGenerated, onBack) {
             })}
          </div>
 
-         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            ${quickCategories.map(cat => `
-               <button
-                  class="category-select group relative flex flex-col items-start p-6 rounded-2xl bg-gradient-to-br ${cat.color} border border-white/5 transition-all hover:scale-[1.02] active:scale-[0.98] ${cat.borderColor} hover:shadow-2xl"
-               >
-                  <div class="p-3 rounded-xl bg-black/40 mb-4 ${cat.iconColor}">
-                     <span class="material-symbols-outlined text-3xl">${cat.icon}</span>
-                  </div>
-                  <h3 class="text-xl font-bold text-white mb-1">${cat.name}</h3>
-                  <p class="text-xs text-slate-400 text-left line-clamp-2">Standard University of Manchester ${cat.name} assessment module.</p>
-                  
-                  <div class="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
-                     <span class="material-symbols-outlined text-primary">bolt</span>
-                  </div>
-               </button>
+         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            ${categories.map(cat => `
+              <div class="category-card group relative h-48 rounded-xl overflow-hidden bg-[#1a1a20] border border-white/10 hover:border-primary/50 cursor-pointer transition-all">
+                 <div class="absolute inset-0 bg-cover bg-center opacity-60 group-hover:opacity-40 transition-opacity" style="background-image: url(${cat.img})"></div>
+                 <div class="absolute inset-0 bg-gradient-to-t from-black via-black/60 to-transparent"></div>
+                 <div class="absolute bottom-0 left-0 p-5">
+                    <span class="material-symbols-outlined ${cat.color} mb-2 text-3xl">${cat.icon}</span>
+                    <h4 class="text-lg font-bold text-white group-hover:text-primary transition-colors">${cat.name}</h4>
+                    <p class="text-xs text-gray-400 mt-1 font-mono">${cat.players} Active Players</p>
+                 </div>
+              </div>
             `).join('')}
-         </div>
-
-         <div class="flex flex-col sm:flex-row items-center justify-between gap-6 pt-8 border-t border-white/5">
-            <div class="flex items-center gap-4">
-               <div class="size-12 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center">
-                  <span class="material-symbols-outlined text-primary">auto_awesome</span>
-               </div>
-               <div>
-                  <p class="text-white font-bold">Uncertain?</p>
-                  <p class="text-xs text-slate-400 uppercase tracking-widest font-bold">Try Random Neural Topic</p>
-               </div>
-            </div>
-            ${Button({
-              variant: 'primary',
-              className: 'w-full sm:w-auto px-12',
-              icon: 'casino',
-              id: 'surprise-btn',
-              children: 'Surprise Me'
-            })}
          </div>
       </div>
     </div>
