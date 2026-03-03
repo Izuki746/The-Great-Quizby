@@ -166,6 +166,15 @@ class QuizbyApp {
         );
         break;
 
+      // 👇 加上这一段 QUICK_MATCH 的页面路由逻辑 👇
+      case AppView.QUICK_MATCH:
+        viewContent = QuickMatchView(
+          (q, c) => this.handleQuestionsGenerated(q, c),
+          () => this.changeView(AppView.DASHBOARD) // 点击 Back 时返回主页
+        );
+        break;
+      // 👆 ========================================= 👆
+
       case AppView.CREATE_QUIZ:
         viewContent = CreateQuizView(
           this.previewQuiz,   // ⭐ 如果是编辑模式，这里有 quiz 数据
