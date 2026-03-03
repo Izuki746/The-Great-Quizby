@@ -1,17 +1,28 @@
-// Play Quiz View
+// static/PlayQuizView.js
 import { Button } from './Button.js';
 
+// 将状态变量移出函数内部，防止每次重新渲染时产生多个相互冲突的定时器
+let currentIndex = 0;
+let selectedOption = null;
+let userAnswers = [];
+let timeLeft = 30;
+let timerInterval = null;
+let currentQuestionsRef = null; // 用于检测是否是全新的测验
+
 export function PlayQuizView(questions, config, onComplete) {
-  let currentIndex = 0;
-  let selectedOption = null;
-  let userAnswers = [];
-  let timeLeft = 30;
-  let timerInterval = null;
+  // 如果进入了新的一轮测验，重置所有的状态变量
+  if (currentQuestionsRef !== questions) {
+    currentQuestionsRef = questions;
+    currentIndex = 0;
+    userAnswers = [];
+    if (timerInterval) clearInterval(timerInterval); 
+  }
 
   const currentQuestion = questions[currentIndex];
 
   const startTimer = () => {
-    clearInterval(timerInterval);
+    // 每次启动定时器前，确保旧的定时器已被清理
+    if (timerInterval) clearInterval(timerInterval);
     timeLeft = 30;
     
     timerInterval = setInterval(() => {
@@ -35,6 +46,7 @@ export function PlayQuizView(questions, config, onComplete) {
         }
       }
       
+      // 时间到了自动提交
       if (timeLeft <= 0) {
         clearInterval(timerInterval);
         submitAnswer(null);
@@ -43,7 +55,7 @@ export function PlayQuizView(questions, config, onComplete) {
   };
 
   const submitAnswer = (answer) => {
-    clearInterval(timerInterval);
+    if (timerInterval) clearInterval(timerInterval);
     
     const isCorrect = answer === questions[currentIndex].correctAnswer;
     
@@ -56,14 +68,15 @@ export function PlayQuizView(questions, config, onComplete) {
     if (currentIndex < questions.length - 1) {
       currentIndex++;
       selectedOption = null;
-      window.quizbyApp.render();
-      setTimeout(() => startTimer(), 100);
+      window.quizbyApp.render(); // 渲染下一题
     } else {
-      // Quiz Complete
+      // 测验完成
       const score = userAnswers.filter(a => a.isCorrect).length * 100;
       const correctCount = userAnswers.filter(a => a.isCorrect).length;
-      
       const streak = calculateStreak(userAnswers);
+      
+      // 清空引用，以便用户再次游玩时能触发重新初始化
+      currentQuestionsRef = null; 
       
       onComplete({
         score,
@@ -120,7 +133,6 @@ export function PlayQuizView(questions, config, onComplete) {
 
   return `
     <div class="flex-1 flex flex-col h-full overflow-hidden">
-      <!-- Quiz Header -->
       <div class="p-6 pb-2 border-b border-white/5 flex items-center justify-between bg-surface/50 backdrop-blur-sm relative z-20">
          <div class="flex flex-col gap-1">
             <span class="text-white/50 text-xs font-bold uppercase tracking-widest">Question ${currentIndex + 1} of ${questions.length}</span>
@@ -140,7 +152,6 @@ export function PlayQuizView(questions, config, onComplete) {
          </div>
       </div>
 
-      <!-- Main Game Area -->
       <div class="flex-1 relative flex flex-col justify-center max-w-5xl mx-auto w-full px-6 py-8">
          <div class="absolute inset-0 pointer-events-none">
             <div class="absolute top-1/4 left-1/4 w-96 h-96 bg-primary/5 rounded-full blur-[100px]"></div>
