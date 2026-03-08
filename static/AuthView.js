@@ -1,7 +1,7 @@
 // Auth View
 import { Button } from './Button.js';
 
-export function AuthView(onLogin, onRegisterClick) {
+export function AuthView(onLogin, onRegisterClick, onForgotPasswordClick) {
   setTimeout(() => {
     const form = document.getElementById('auth-form');
     if (form) {
@@ -18,6 +18,14 @@ export function AuthView(onLogin, onRegisterClick) {
       registerBtn.addEventListener('click', (e) => {
         e.preventDefault();
         onRegisterClick();
+      });
+    }
+
+    const forgotPasswordBtn = document.getElementById('forgot-password-btn');
+    if (forgotPasswordBtn) {
+      forgotPasswordBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        onForgotPasswordClick();
       });
     }
   }, 0);
@@ -47,6 +55,14 @@ export function AuthView(onLogin, onRegisterClick) {
           </div>
 
           <form id="auth-form" class="space-y-6">
+            <!-- Error Message Display -->
+            <div id="login-error" class="hidden bg-red-500/10 border border-red-500/50 rounded-xl p-4 text-red-400 text-sm">
+              <div class="flex items-start gap-3">
+                <span class="material-symbols-outlined text-red-500 flex-shrink-0">error</span>
+                <span id="login-error-text"></span>
+              </div>
+            </div>
+
             <div class="space-y-2">
               <label class="text-xs font-bold text-primary uppercase tracking-[0.15em] ml-1">Username</label>
               <div class="relative group">
@@ -54,6 +70,7 @@ export function AuthView(onLogin, onRegisterClick) {
                   type="text" 
                   id="username"
                   placeholder="your_username"
+                  required
                   class="w-full bg-[#0d0214]/60 border border-uom-purple/50 text-white rounded-xl p-4 pl-12 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all placeholder:text-gray-600"
                 />
                 <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-primary transition-colors">person</span>
@@ -67,6 +84,7 @@ export function AuthView(onLogin, onRegisterClick) {
                   type="password" 
                   id="password"
                   placeholder="••••••••"
+                  required
                   class="w-full bg-[#0d0214]/60 border border-uom-purple/50 text-white rounded-xl p-4 pl-12 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all placeholder:text-gray-600"
                 />
                 <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-primary transition-colors">lock</span>
@@ -74,7 +92,7 @@ export function AuthView(onLogin, onRegisterClick) {
             </div>
 
             <div class="flex justify-end">
-               <a href="#" class="text-xs font-bold text-primary/80 hover:text-primary">Forgot Password?</a>
+               <button id="forgot-password-btn" class="text-xs font-bold text-primary/80 hover:text-primary transition-colors">Forgot Password?</button>
             </div>
 
             ${Button({

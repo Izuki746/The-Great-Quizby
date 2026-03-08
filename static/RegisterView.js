@@ -8,8 +8,10 @@ export function RegisterView(onRegister, onLoginClick) {
       form.addEventListener('submit', (e) => {
         e.preventDefault();
         const username = document.getElementById('register-username').value;
+        const email = document.getElementById('register-email').value;
         const password = document.getElementById('register-password').value;
-        onRegister(username, password);
+        const confirmPassword = document.getElementById('register-confirm-password').value;
+        onRegister(username, email, password, confirmPassword);
       });
     }
 
@@ -47,15 +49,19 @@ export function RegisterView(onRegister, onLoginClick) {
           </div>
 
           <form id="register-form" class="space-y-6">
-            <div class="space-y-2">
-              <label class="text-xs font-bold text-primary uppercase tracking-[0.15em] ml-1">Full Name</label>
-              <div class="relative group">
-                <input 
-                  type="text" 
-                  placeholder="John Doe"
-                  class="w-full bg-[#0d0214]/60 border border-uom-purple/50 text-white rounded-xl p-4 pl-12 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all placeholder:text-gray-600"
-                />
-                <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-primary transition-colors">badge</span>
+            <!-- Success Message Display -->
+            <div id="register-success" class="hidden bg-green-500/10 border border-green-500/50 rounded-xl p-4 text-green-400 text-sm">
+              <div class="flex items-start gap-3">
+                <span class="material-symbols-outlined text-green-500 flex-shrink-0">check_circle</span>
+                <span id="register-success-text"></span>
+              </div>
+            </div>
+
+            <!-- Error Message Display -->
+            <div id="register-error" class="hidden bg-red-500/10 border border-red-500/50 rounded-xl p-4 text-red-400 text-sm">
+              <div class="flex items-start gap-3">
+                <span class="material-symbols-outlined text-red-500 flex-shrink-0">error</span>
+                <span id="register-error-text"></span>
               </div>
             </div>
 
@@ -66,9 +72,24 @@ export function RegisterView(onRegister, onLoginClick) {
                   type="text" 
                   id="register-username"
                   placeholder="your_username"
+                  required
                   class="w-full bg-[#0d0214]/60 border border-uom-purple/50 text-white rounded-xl p-4 pl-12 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all placeholder:text-gray-600"
                 />
                 <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-primary transition-colors">person</span>
+              </div>
+            </div>
+
+            <div class="space-y-2">
+              <label class="text-xs font-bold text-primary uppercase tracking-[0.15em] ml-1">Email</label>
+              <div class="relative group">
+                <input 
+                  type="email" 
+                  id="register-email"
+                  placeholder="your.email@example.com"
+                  required
+                  class="w-full bg-[#0d0214]/60 border border-uom-purple/50 text-white rounded-xl p-4 pl-12 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all placeholder:text-gray-600"
+                />
+                <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-primary transition-colors">email</span>
               </div>
             </div>
 
@@ -79,9 +100,26 @@ export function RegisterView(onRegister, onLoginClick) {
                   type="password" 
                   id="register-password"
                   placeholder="••••••••"
+                  required
+                  minlength="6"
                   class="w-full bg-[#0d0214]/60 border border-uom-purple/50 text-white rounded-xl p-4 pl-12 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all placeholder:text-gray-600"
                 />
                 <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-primary transition-colors">lock</span>
+              </div>
+            </div>
+
+            <div class="space-y-2">
+              <label class="text-xs font-bold text-primary uppercase tracking-[0.15em] ml-1">Confirm Password</label>
+              <div class="relative group">
+                <input 
+                  type="password" 
+                  id="register-confirm-password"
+                  placeholder="••••••••"
+                  required
+                  minlength="6"
+                  class="w-full bg-[#0d0214]/60 border border-uom-purple/50 text-white rounded-xl p-4 pl-12 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all placeholder:text-gray-600"
+                />
+                <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-primary transition-colors">lock_reset</span>
               </div>
             </div>
 
