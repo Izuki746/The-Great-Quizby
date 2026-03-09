@@ -10,7 +10,7 @@ import { ResultsView } from './ResultsView.js';
 import { ProfileView } from './ProfileView.js';
 import { Layout } from './Layout.js';
 import { HomeView } from './homeView.js';
-import { QuizPreviewView } from './QuizPreviewView.js';   // ⭐ 新增
+import { QuizPreviewView } from './QuizPreviewView.js';   // ⭐ Preview page
 
 // App Views Enum
 const AppView = {
@@ -23,7 +23,7 @@ const AppView = {
   PLAY_QUIZ: 'PLAY_QUIZ',
   RESULTS: 'RESULTS',
   PROFILE: 'PROFILE',
-  PREVIEW_QUIZ: 'PREVIEW_QUIZ',   // ⭐ 新增
+  PREVIEW_QUIZ: 'PREVIEW_QUIZ',   // ⭐ Preview page
 };
 
 // Initial User Profile
@@ -47,8 +47,8 @@ class QuizbyApp {
     this.lastResult = null;
     this.user = { ...INITIAL_USER };
 
-    this.previewQuiz = null;        // ⭐ 用于 Preview 和 Edit
-    this.editingQuizIndex = null;   // ⭐ 用于 Edit
+    this.previewQuiz = null;        // ⭐ Used for Preview and Edit
+    this.editingQuizIndex = null;   // ⭐ Used for Edit
 
     this.rootElement = document.getElementById('root');
     this.init();
@@ -166,21 +166,20 @@ class QuizbyApp {
         );
         break;
 
-      // 👇 加上这一段 QUICK_MATCH 的页面路由逻辑 👇
+      // ⭐ Quick Match routing
       case AppView.QUICK_MATCH:
         viewContent = QuickMatchView(
           (q, c) => this.handleQuestionsGenerated(q, c),
-          () => this.changeView(AppView.DASHBOARD) // 点击 Back 时返回主页
+          () => this.changeView(AppView.DASHBOARD)
         );
         break;
-      // 👆 ========================================= 👆
 
       case AppView.CREATE_QUIZ:
         viewContent = CreateQuizView(
-          this.previewQuiz,   // ⭐ 如果是编辑模式，这里有 quiz 数据
+          this.previewQuiz,   // ⭐ If editing, pass quiz data
           (quiz) => {
             if (this.editingQuizIndex !== null) {
-              // ⭐ 编辑模式：覆盖原 quiz
+              // ⭐ Edit mode: overwrite quiz
               this.user.quizzes[this.editingQuizIndex] = {
                 ...quiz,
                 createdAt: this.user.quizzes[this.editingQuizIndex].createdAt
@@ -190,7 +189,7 @@ class QuizbyApp {
               alert("Quiz updated!");
               this.changeView(AppView.PROFILE);
             } else {
-              // ⭐ 创建模式
+              // ⭐ Create mode
               this.handleManualQuizSave(quiz);
             }
           },
@@ -217,7 +216,13 @@ class QuizbyApp {
       case AppView.PREVIEW_QUIZ:
         viewContent = QuizPreviewView(
           this.previewQuiz,
-          () => this.changeView(AppView.PROFILE)
+          () => this.changeView(AppView.PROFILE),
+          () => {
+            // ⭐ Start Quiz from Preview
+            this.questions = this.previewQuiz.questions;
+            this.currentConfig = { manual: true };
+            this.changeView(AppView.PLAY_QUIZ);
+          }
         );
         break;
 

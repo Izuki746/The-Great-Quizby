@@ -1,6 +1,7 @@
-export function QuizPreviewView(quiz, onBack) {
+export function QuizPreviewView(quiz, onBack, onStartQuiz) {
   setTimeout(() => {
-    // 为每个折叠按钮添加事件
+
+    // Add toggle event for each question
     document.querySelectorAll(".toggle-question").forEach(btn => {
       btn.addEventListener("click", () => {
         const id = btn.getAttribute("data-id");
@@ -16,9 +17,14 @@ export function QuizPreviewView(quiz, onBack) {
       });
     });
 
-    // 返回按钮
+    // Back button
     const backBtn = document.getElementById("back-btn");
     if (backBtn) backBtn.addEventListener("click", () => onBack());
+
+    // ⭐ Start Quiz button
+    const startBtn = document.getElementById("start-quiz-btn");
+    if (startBtn) startBtn.addEventListener("click", () => onStartQuiz());
+
   }, 0);
 
   return `
@@ -31,7 +37,13 @@ export function QuizPreviewView(quiz, onBack) {
       </button>
 
       <h1 class="text-4xl font-bold text-white mb-6">Quiz Preview</h1>
-      <h2 class="text-2xl font-bold text-primary mb-8">${quiz.name}</h2>
+      <h2 class="text-2xl font-bold text-primary mb-4">${quiz.name}</h2>
+
+      <!-- ⭐ Start Quiz Button -->
+      <button id="start-quiz-btn"
+        class="mb-8 px-6 py-3 rounded-lg bg-green-500 text-black font-bold hover:bg-green-400 transition-all">
+        Start Quiz
+      </button>
 
       <div class="w-full max-w-3xl space-y-6">
         ${quiz.questions
@@ -39,7 +51,7 @@ export function QuizPreviewView(quiz, onBack) {
             (q, i) => `
           <div class="glass-card p-5 rounded-xl text-white">
 
-            <!-- 顶部：题目 + 折叠按钮 -->
+            <!-- Top: question + toggle button -->
             <div class="flex justify-between items-center mb-3">
               <p class="font-bold text-lg">Q${i + 1}: ${q.question}</p>
 
@@ -49,7 +61,7 @@ export function QuizPreviewView(quiz, onBack) {
               </button>
             </div>
 
-            <!-- 折叠内容（默认隐藏） -->
+            <!-- Collapsible content (hidden by default) -->
             <div id="content-${i}" class="hidden space-y-2 mt-3">
 
               ${q.options
