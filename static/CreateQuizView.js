@@ -8,7 +8,7 @@ export function CreateQuizView(existingQuiz, onSaveQuiz, onBack) {
       backBtn.addEventListener("click", () => onBack());
     }
 
-    // ⭐ 如果是编辑模式 → 自动填充题目
+    //if is modified mode, fill the question automatically
     if (existingQuiz) {
       document.getElementById("quiz-name-input").value = existingQuiz.name;
 
@@ -64,14 +64,14 @@ export function CreateQuizView(existingQuiz, onSaveQuiz, onBack) {
 
         container.appendChild(card);
 
-        // 删除按钮
+        // delete button
         card.querySelector(".delete-question").addEventListener("click", () => {
           card.remove();
         });
       });
     }
 
-    // 添加题目
+    // add questions
     if (addBtn) {
       addBtn.addEventListener("click", () => {
         const container = document.getElementById("question-container");
@@ -126,7 +126,7 @@ export function CreateQuizView(existingQuiz, onSaveQuiz, onBack) {
       });
     }
 
-    // 保存题目
+    // save question
     if (saveBtn) {
       saveBtn.addEventListener("click", () => {
         const quizName = document.getElementById("quiz-name-input").value.trim();
