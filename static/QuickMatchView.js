@@ -2,7 +2,7 @@
 import { Button } from './Button.js';
 import { generateQuizQuestions } from './quizService.js';
 
-// 将弹窗状态设为全局变量，避免重新渲染时丢失
+// set the category to global
 let activeModalCategory = null;
 
 export function QuickMatchView(onQuestionsGenerated, onBack) {
@@ -16,7 +16,7 @@ export function QuickMatchView(onQuestionsGenerated, onBack) {
     { name: 'Global History', icon: 'history_edu', color: 'text-yellow-400', img: 'https://images.unsplash.com/photo-1541194577687-8c63bf9e7ee3?auto=format&fit=crop&q=80&w=400', topic: 'Global History' },
   ];
 
-  // 扩展了模拟数据，让弹窗里有更多内容
+ 
   const mockLeaderboards = {
     'World Culture': [
       { name: 'AlexTheGreat', score: 9800, avatar: 'person' },
@@ -95,7 +95,7 @@ export function QuickMatchView(onQuestionsGenerated, onBack) {
       card.addEventListener('click', () => handleSelect(categories[idx].topic));
     });
 
-    // 为所有的“查看完整排行”按钮绑定点击事件
+
     document.querySelectorAll('.view-rankings-btn').forEach(btn => {
       btn.addEventListener('click', (e) => {
         const topic = e.currentTarget.dataset.topic;
@@ -103,13 +103,13 @@ export function QuickMatchView(onQuestionsGenerated, onBack) {
       });
     });
 
-    // 弹窗关闭事件：点击关闭按钮
+
     const closeModalBtn = document.getElementById('close-modal-btn');
     if (closeModalBtn) {
       closeModalBtn.addEventListener('click', closeModal);
     }
 
-    // 弹窗关闭事件：点击弹窗外部的黑色半透明背景
+
     const modalBackdrop = document.getElementById('modal-backdrop');
     if (modalBackdrop) {
       modalBackdrop.addEventListener('click', (e) => {
@@ -146,7 +146,7 @@ export function QuickMatchView(onQuestionsGenerated, onBack) {
     };
     const rankStyle = rankColors[rank] || 'text-slate-500 font-mono text-sm';
     
-    // 弹窗里的行稍微高亮并且 padding 更大
+ 
     const paddingClass = isModal ? 'p-3 mb-2' : 'p-2';
 
     return `
@@ -163,7 +163,7 @@ export function QuickMatchView(onQuestionsGenerated, onBack) {
     `;
   };
 
-  // 生成弹窗的 HTML（如果当前 activeModalCategory 有值，则渲染弹窗内容）
+
   const renderModal = () => {
     if (!activeModalCategory) return '';
     
@@ -174,7 +174,7 @@ export function QuickMatchView(onQuestionsGenerated, onBack) {
       <div id="modal-backdrop" class="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-200">
          <div class="bg-surface border border-white/10 rounded-2xl w-full max-w-md shadow-2xl overflow-hidden flex flex-col max-h-[80vh] transform transition-all scale-100 animate-in zoom-in-95 duration-200">
             
-            <!-- 弹窗头部 -->
+            <!-- head of the window -->
             <div class="p-6 border-b border-white/10 flex items-center justify-between bg-white/5 relative overflow-hidden">
                <div class="absolute inset-0 bg-gradient-to-r from-primary/10 to-transparent"></div>
                <div class="relative z-10 flex items-center gap-3">
@@ -209,7 +209,7 @@ export function QuickMatchView(onQuestionsGenerated, onBack) {
     <div class="flex-1 flex flex-col items-center p-6 md:p-12 max-w-7xl mx-auto w-full overflow-y-auto">
       <div class="w-full space-y-12 animate-fade-in mt-4">
          
-         <!-- 顶部：分类选择模块 -->
+         <!-- categories choose module -->
          <div>
              <div class="flex items-center justify-between mb-6">
                 <div>
@@ -260,7 +260,7 @@ export function QuickMatchView(onQuestionsGenerated, onBack) {
                         <h3 class="text-white font-bold text-sm tracking-wide">${cat.name}</h3>
                      </div>
                      <div class="space-y-2 flex-1">
-                        <!-- 这里只展示前 3 名 -->
+                        <!-- only show top 3 -->
                         ${(mockLeaderboards[cat.topic] || []).slice(0, 3).map((player, index) => renderPlayerRow(player, index + 1)).join('')}
                      </div>
                      <div class="mt-4 pt-3 text-center border-t border-white/5">
@@ -276,7 +276,7 @@ export function QuickMatchView(onQuestionsGenerated, onBack) {
 
       </div>
       
-      <!-- 注入弹窗 HTML -->
+      <!-- add window HTML -->
       ${renderModal()}
 
     </div>
