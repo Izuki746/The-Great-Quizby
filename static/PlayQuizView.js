@@ -1,13 +1,13 @@
 // static/PlayQuizView.js
 import { Button } from './Button.js';
 
-// 将状态变量移出函数内部，防止每次重新渲染时产生多个相互冲突的定时器
+
 let currentIndex = 0;
 let selectedOption = null;
 let userAnswers = [];
 let timeLeft = 30;
 let timerInterval = null;
-let currentQuestionsRef = null; // 用于检测是否是全新的测验
+let currentQuestionsRef = null; // test whether it is a new quiz
 
 export function PlayQuizView(questions, config, onComplete) {
   // if in the new question, reset all state variables
@@ -68,7 +68,7 @@ export function PlayQuizView(questions, config, onComplete) {
     if (currentIndex < questions.length - 1) {
       currentIndex++;
       selectedOption = null;
-      window.quizbyApp.render(); // 渲染下一题
+      window.quizbyApp.render(); // render next question
     } else {
       // test end
       const score = userAnswers.filter(a => a.isCorrect).length * 100;
