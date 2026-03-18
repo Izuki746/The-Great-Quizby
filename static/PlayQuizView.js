@@ -10,7 +10,7 @@ let timerInterval = null;
 let currentQuestionsRef = null; // 用于检测是否是全新的测验
 
 export function PlayQuizView(questions, config, onComplete) {
-  // 如果进入了新的一轮测验，重置所有的状态变量
+  // if in the new question, reset all state variables
   if (currentQuestionsRef !== questions) {
     currentQuestionsRef = questions;
     currentIndex = 0;
@@ -21,7 +21,7 @@ export function PlayQuizView(questions, config, onComplete) {
   const currentQuestion = questions[currentIndex];
 
   const startTimer = () => {
-    // 每次启动定时器前，确保旧的定时器已被清理
+    // make sure old timer is clear before set a new timer
     if (timerInterval) clearInterval(timerInterval);
     timeLeft = 30;
     
@@ -46,7 +46,7 @@ export function PlayQuizView(questions, config, onComplete) {
         }
       }
       
-      // 时间到了自动提交
+      // submit automatically when the time end
       if (timeLeft <= 0) {
         clearInterval(timerInterval);
         submitAnswer(null);
@@ -70,12 +70,12 @@ export function PlayQuizView(questions, config, onComplete) {
       selectedOption = null;
       window.quizbyApp.render(); // 渲染下一题
     } else {
-      // 测验完成
+      // test end
       const score = userAnswers.filter(a => a.isCorrect).length * 100;
       const correctCount = userAnswers.filter(a => a.isCorrect).length;
       const streak = calculateStreak(userAnswers);
       
-      // 清空引用，以便用户再次游玩时能触发重新初始化
+      // clear current question
       currentQuestionsRef = null; 
       
       onComplete({
