@@ -14,7 +14,7 @@ export function DashboardView(onViewChange) {
     }
   }, 0);
 
-  // 注意这里的最外层 div 加上了 justify-center
+  // the out layer of  'div' add 'justify-center'
   return `
     <div class="flex-1 flex flex-col items-center justify-center p-6 md:p-12 max-w-7xl mx-auto w-full">
       <div class="text-center space-y-6 animate-float mb-12 mt-8">
