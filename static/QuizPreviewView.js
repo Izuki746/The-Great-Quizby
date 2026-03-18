@@ -21,7 +21,7 @@ export function QuizPreviewView(quiz, onBack, onStartQuiz) {
     const backBtn = document.getElementById("back-btn");
     if (backBtn) backBtn.addEventListener("click", () => onBack());
 
-    // ⭐ Start Quiz button
+    // Start Quiz button
     const startBtn = document.getElementById("start-quiz-btn");
     if (startBtn) startBtn.addEventListener("click", () => onStartQuiz());
 
@@ -39,7 +39,7 @@ export function QuizPreviewView(quiz, onBack, onStartQuiz) {
       <h1 class="text-4xl font-bold text-white mb-6">Quiz Preview</h1>
       <h2 class="text-2xl font-bold text-primary mb-4">${quiz.name}</h2>
 
-      <!-- ⭐ Start Quiz Button -->
+      <!-- Start Quiz Button -->
       <button id="start-quiz-btn"
         class="mb-8 px-6 py-3 rounded-lg bg-green-500 text-black font-bold hover:bg-green-400 transition-all">
         Start Quiz
