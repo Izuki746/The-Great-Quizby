@@ -10,7 +10,7 @@ import { ResultsView } from './ResultsView.js';
 import { ProfileView } from './ProfileView.js';
 import { Layout } from './Layout.js';
 import { HomeView } from './homeView.js';
-import { QuizPreviewView } from './QuizPreviewView.js';   // ⭐ Preview page
+import { QuizPreviewView } from './QuizPreviewView.js';
 
 // App Views Enum
 const AppView = {
@@ -23,20 +23,20 @@ const AppView = {
   PLAY_QUIZ: 'PLAY_QUIZ',
   RESULTS: 'RESULTS',
   PROFILE: 'PROFILE',
-  PREVIEW_QUIZ: 'PREVIEW_QUIZ',   // ⭐ Preview page
+  PREVIEW_QUIZ: 'PREVIEW_QUIZ',
 };
 
 // Initial User Profile
 const INITIAL_USER = {
-  name: "Quizby Student",
-  email: "student@learning.ai",
+  name: "",
+  email: "",
   level: 1,
   title: "Novice Scholar",
   totalQuizzes: 0,
   avgAccuracy: 0,
-  streak: 0,
   points: 0,
-  avatarUrl: "https://api.dicebear.com/7.x/avataaars/svg?seed=Felix"
+  avatarUrl: "https://api.dicebear.com/7.x/avataaars/svg?seed=Felix",
+  quizzes: []
 };
 
 class QuizbyApp {
@@ -45,10 +45,11 @@ class QuizbyApp {
     this.questions = [];
     this.currentConfig = null;
     this.lastResult = null;
+
     this.user = { ...INITIAL_USER };
 
-    this.previewQuiz = null;        // ⭐ Used for Preview and Edit
-    this.editingQuizIndex = null;   // ⭐ Used for Edit
+    this.previewQuiz = null;
+    this.editingQuizIndex = null;
 
     this.rootElement = document.getElementById('root');
     this.init();
@@ -66,6 +67,9 @@ class QuizbyApp {
     this.render();
   }
 
+  // -----------------------------
+  // REGISTER
+  // -----------------------------
   handleRegister(username, password) {
     fetch('/signup', {
       method: 'POST',
@@ -80,10 +84,12 @@ class QuizbyApp {
       } else {
         alert('Registration failed: ' + (data.error || 'Please try again'));
       }
-    })
-    .catch(() => alert('Network error: Could not reach server'));
+    });
   }
 
+  // -----------------------------
+  // LOGIN
+  // -----------------------------
   handleLogin(username, password) {
     fetch('/login', {
       method: 'POST',
@@ -92,51 +98,80 @@ class QuizbyApp {
     })
     .then(r => r.json())
     .then(data => {
-      if (data.success) {
-        if (data.user) this.user = { ...this.user, ...data.user };
-        this.user.name = username;
-        this.changeView(AppView.DASHBOARD);
-      } else {
+      if (!data.success) {
         alert('Login failed: ' + (data.error || 'Invalid credentials'));
+        return;
       }
-    })
-    .catch(() => alert('Network error: Could not reach server'));
-  }
 
-  handleQuestionsGenerated(generatedQuestions, config) {
-    this.questions = generatedQuestions;
-    this.currentConfig = config;
-    this.changeView(AppView.PLAY_QUIZ);
-  }
+      // Load user info
+      this.user.name = username;
+      this.user.email = `${username}@learning.ai`;
 
-  handleManualQuizSave(quiz) {
-    if (!this.user.quizzes) this.user.quizzes = [];
+      // Load quizzes from backend
+      fetch('/get_user_quizzes')
+        .then(r => r.json())
+        .then(quizzes => {
+          this.user.quizzes = quizzes;
+          this.user.totalQuizzes = quizzes.length;
+          this.changeView(AppView.DASHBOARD);
+        });
 
-    this.user.quizzes.push({
-      name: quiz.name,
-      createdAt: new Date().toISOString(),
-      questions: quiz.questions
     });
-
-    this.user.totalQuizzes = this.user.quizzes.length;
-
-    alert("Your quiz has been saved!");
-    this.changeView(AppView.DASHBOARD);
   }
 
+  // -----------------------------
+  // SAVE QUIZ TO DATABASE
+  // -----------------------------
+  handleManualQuizSave(quiz) {
+    fetch('/save_quiz', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name: quiz.name,
+        createdAt: new Date().toISOString(),
+        questions: quiz.questions
+      })
+    })
+    .then(r => r.json())
+    .then(data => {
+      if (!data.success) {
+        alert("Failed to save quiz.");
+        return;
+      }
+
+      // Reload quizzes
+      fetch('/get_user_quizzes')
+        .then(r => r.json())
+        .then(quizzes => {
+          this.user.quizzes = quizzes;
+          this.user.totalQuizzes = quizzes.length;
+          alert("Your quiz has been saved!");
+          this.changeView(AppView.DASHBOARD);
+        });
+    });
+  }
+
+  // -----------------------------
+  // QUIZ COMPLETE
+  // -----------------------------
   handleQuizComplete(result) {
     this.lastResult = result;
-    this.user.totalQuizzes += 1;
     this.user.points += result.score;
-    this.user.streak = Math.max(this.user.streak, result.streak);
-    this.user.level = Math.floor(this.user.points / 500) + 1;
     this.changeView(AppView.RESULTS);
   }
 
+  // -----------------------------
+  // LOGOUT
+  // -----------------------------
   handleLogout() {
+    fetch('/logout', { method: 'POST' });
+    this.user = { ...INITIAL_USER };
     this.changeView(AppView.AUTH);
   }
 
+  // -----------------------------
+  // RENDER
+  // -----------------------------
   render() {
     let viewContent = '';
 
@@ -166,7 +201,6 @@ class QuizbyApp {
         );
         break;
 
-      // ⭐ Quick Match routing
       case AppView.QUICK_MATCH:
         viewContent = QuickMatchView(
           (q, c) => this.handleQuestionsGenerated(q, c),
@@ -176,20 +210,36 @@ class QuizbyApp {
 
       case AppView.CREATE_QUIZ:
         viewContent = CreateQuizView(
-          this.previewQuiz,   // ⭐ If editing, pass quiz data
+          this.previewQuiz,
           (quiz) => {
             if (this.editingQuizIndex !== null) {
-              // ⭐ Edit mode: overwrite quiz
-              this.user.quizzes[this.editingQuizIndex] = {
-                ...quiz,
-                createdAt: this.user.quizzes[this.editingQuizIndex].createdAt
-              };
-              this.editingQuizIndex = null;
-              this.previewQuiz = null;
-              alert("Quiz updated!");
-              this.changeView(AppView.PROFILE);
+              // UPDATE QUIZ
+              const quizId = this.user.quizzes[this.editingQuizIndex].id;
+
+              fetch('/update_quiz', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  id: quizId,
+                  name: quiz.name,
+                  questions: quiz.questions
+                })
+              })
+              .then(r => r.json())
+              .then(() => {
+                return fetch('/get_user_quizzes');
+              })
+              .then(r => r.json())
+              .then(quizzes => {
+                this.user.quizzes = quizzes;
+                this.editingQuizIndex = null;
+                this.previewQuiz = null;
+                alert("Quiz updated!");
+                this.changeView(AppView.PROFILE);
+              });
+
             } else {
-              // ⭐ Create mode
+              // CREATE NEW QUIZ
               this.handleManualQuizSave(quiz);
             }
           },
@@ -218,16 +268,12 @@ class QuizbyApp {
           this.previewQuiz,
           () => this.changeView(AppView.PROFILE),
           () => {
-            // ⭐ Start Quiz from Preview
             this.questions = this.previewQuiz.questions;
             this.currentConfig = { manual: true };
             this.changeView(AppView.PLAY_QUIZ);
           }
         );
         break;
-
-      default:
-        viewContent = DashboardView((v) => this.changeView(v));
     }
 
     if ([AppView.SPLASH, AppView.AUTH, AppView.REGISTER].includes(this.currentView)) {
@@ -245,9 +291,11 @@ class QuizbyApp {
     this.attachEventListeners();
   }
 
+  // -----------------------------
+  // EVENT LISTENERS
+  // -----------------------------
   attachEventListeners() {
 
-    // ⭐ Profile → Preview
     if (this.currentView === AppView.PROFILE) {
       document.querySelectorAll("[data-quiz-index]").forEach(btn => {
         btn.addEventListener("click", () => {
@@ -257,7 +305,6 @@ class QuizbyApp {
         });
       });
 
-      // ⭐ Profile → Edit
       document.querySelectorAll("[data-edit-index]").forEach(btn => {
         btn.addEventListener("click", () => {
           const index = btn.getAttribute("data-edit-index");
@@ -267,23 +314,27 @@ class QuizbyApp {
         });
       });
 
-      // ⭐ Profile → Delete
       document.querySelectorAll("[data-delete-index]").forEach(btn => {
         btn.addEventListener("click", () => {
           const index = btn.getAttribute("data-delete-index");
+          const quiz = this.user.quizzes[index];
 
           const confirmDelete = confirm("Are you sure you want to delete this quiz?");
           if (!confirmDelete) return;
 
-          this.user.quizzes.splice(index, 1);
-          this.user.totalQuizzes = this.user.quizzes.length;
-
-          this.changeView(AppView.PROFILE);
+          fetch('/delete_quiz', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id: quiz.id })
+          })
+          .then(() => {
+            this.user.quizzes.splice(index, 1);
+            this.changeView(AppView.PROFILE);
+          });
         });
       });
     }
 
-    // ⭐ Preview → Back
     if (this.currentView === AppView.PREVIEW_QUIZ) {
       const backBtn = document.getElementById("back-btn");
       if (backBtn) backBtn.addEventListener("click", () => this.changeView(AppView.PROFILE));
