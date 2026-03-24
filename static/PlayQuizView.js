@@ -1,16 +1,30 @@
 // static/PlayQuizView.js
 import { Button } from './Button.js';
 
-
 let currentIndex = 0;
 let selectedOption = null;
 let userAnswers = [];
 let timeLeft = 30;
 let timerInterval = null;
-let currentQuestionsRef = null; // test whether it is a new quiz
+let currentQuestionsRef = null; 
 
 export function PlayQuizView(questions, config, onComplete) {
-  // if in the new question, reset all state variables
+  // ⭐ 安全拦截：如果题目数据丢失，显示错误提示而不是直接白屏死机
+  if (!questions || questions.length === 0) {
+    return `
+      <div class="flex-1 flex flex-col items-center justify-center p-6 text-center animate-fade-in">
+         <span class="material-symbols-outlined text-red-500 text-6xl mb-4">error</span>
+         <h2 class="text-3xl font-bold text-white mb-2 font-display">Neural Link Failed</h2>
+         <p class="text-slate-400 mb-8">Unable to retrieve questions for this category.</p>
+         ${Button({
+           icon: 'home',
+           onClick: "window.quizbyApp.changeView('DASHBOARD')",
+           children: 'Return to Dashboard'
+         })}
+      </div>
+    `;
+  }
+
   if (currentQuestionsRef !== questions) {
     currentQuestionsRef = questions;
     currentIndex = 0;
@@ -21,13 +35,11 @@ export function PlayQuizView(questions, config, onComplete) {
   const currentQuestion = questions[currentIndex];
 
   const startTimer = () => {
-    // make sure old timer is clear before set a new timer
     if (timerInterval) clearInterval(timerInterval);
     timeLeft = 30;
     
     timerInterval = setInterval(() => {
       timeLeft--;
-      
       const timerDisplay = document.getElementById('timer-display');
       const timerIcon = document.getElementById('timer-icon');
       
@@ -35,18 +47,13 @@ export function PlayQuizView(questions, config, onComplete) {
         timerDisplay.textContent = `00:${timeLeft.toString().padStart(2, '0')}`;
         if (timeLeft < 10) {
           timerDisplay.className = 'text-xl font-bold tabular-nums tracking-tight text-red-500';
-          if (timerIcon) {
-            timerIcon.className = 'material-symbols-outlined text-red-500 animate-pulse';
-          }
+          if (timerIcon) timerIcon.className = 'material-symbols-outlined text-red-500 animate-pulse';
         } else {
           timerDisplay.className = 'text-xl font-bold tabular-nums tracking-tight text-white';
-          if (timerIcon) {
-            timerIcon.className = 'material-symbols-outlined text-primary';
-          }
+          if (timerIcon) timerIcon.className = 'material-symbols-outlined text-primary';
         }
       }
       
-      // submit automatically when the time end
       if (timeLeft <= 0) {
         clearInterval(timerInterval);
         submitAnswer(null);
@@ -68,14 +75,12 @@ export function PlayQuizView(questions, config, onComplete) {
     if (currentIndex < questions.length - 1) {
       currentIndex++;
       selectedOption = null;
-      window.quizbyApp.render(); // render next question
+      window.quizbyApp.render(); 
     } else {
-      // test end
       const score = userAnswers.filter(a => a.isCorrect).length * 100;
       const correctCount = userAnswers.filter(a => a.isCorrect).length;
       const streak = calculateStreak(userAnswers);
       
-      // clear current question
       currentQuestionsRef = null; 
       
       onComplete({
