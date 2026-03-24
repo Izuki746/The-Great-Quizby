@@ -36,8 +36,8 @@ const INITIAL_USER = {
   avgAccuracy: 0,
   points: 0,
   avatarUrl: "https://api.dicebear.com/7.x/avataaars/svg?seed=Felix",
-  quizzes: []
-};
+  quizzes: [],
+  quizHistory: [] // record question history in Trending categories
 
 class QuizbyApp {
   constructor() {
@@ -157,7 +157,29 @@ class QuizbyApp {
   handleQuizComplete(result) {
     this.lastResult = result;
     this.user.points += result.score;
+    
+    if (!this.user.quizHistory) this.user.quizHistory = [];
+    this.user.quizHistory.push(result);
+    
+    let totalCorrect = 0;
+    let totalQuestions = 0;
+    this.user.quizHistory.forEach(r => {
+      totalCorrect += r.correctAnswers;
+      totalQuestions += r.totalQuestions;
+    });
+    
+    this.user.avgAccuracy = totalQuestions > 0 ? Math.round((totalCorrect / totalQuestions) * 100) : 0;
+    
     this.changeView(AppView.RESULTS);
+  }
+
+  // -----------------------------
+  // MATCH START (QUICK MATCH)
+  // -----------------------------
+  handleQuestionsGenerated(questions, config) {
+    this.questions = questions;      // 把生成的题目存入全局状态
+    this.currentConfig = config;     // 存入当前测验的配置
+    this.changeView(AppView.PLAY_QUIZ); // 完美跳转到答题页面！
   }
 
   // -----------------------------
