@@ -9,7 +9,6 @@ let timerInterval = null;
 let currentQuestionsRef = null; 
 
 export function PlayQuizView(questions, config, onComplete) {
-  // ⭐ 安全拦截：如果题目数据丢失，显示错误提示而不是直接白屏死机
   if (!questions || questions.length === 0) {
     return `
       <div class="flex-1 flex flex-col items-center justify-center p-6 text-center animate-fade-in">
