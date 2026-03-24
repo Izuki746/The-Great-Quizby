@@ -38,26 +38,13 @@ export function ResultsView(result, onViewChange) {
                   <span class="text-[10px] text-gray-400 uppercase font-bold">Total Points</span>
                   <span class="text-2xl font-bold text-white font-display">${result.score}</span>
                </div>
-               <div class="px-5 py-3 rounded-lg bg-white/5 border border-white/10 flex flex-col">
-                  <span class="text-[10px] text-gray-400 uppercase font-bold">Streak</span>
-                  <span class="text-2xl font-bold text-white font-display">${result.streak} Days 🔥</span>
-               </div>
             </div>
          </div>
 
          <!-- Chart -->
          <div class="z-10 relative w-48 h-48 md:w-56 md:h-56 shrink-0 flex items-center justify-center">
              <svg class="transform -rotate-90" width="100%" height="100%" viewBox="0 0 200 200">
-                <!-- Background circle -->
-                <circle
-                  cx="100"
-                  cy="100"
-                  r="80"
-                  fill="none"
-                  stroke="#333"
-                  stroke-width="30"
-                />
-                <!-- Progress circle -->
+                <circle cx="100" cy="100" r="80" fill="none" stroke="#333" stroke-width="30" />
                 <circle
                   cx="100"
                   cy="100"

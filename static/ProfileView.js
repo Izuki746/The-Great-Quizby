@@ -1,7 +1,7 @@
 // Profile View
 export function ProfileView(user) {
   return `
-    <div class="flex-1 w-full">
+    <div class="flex-1 w-full overflow-hidden">
        <div class="relative w-full border-b border-white/10 bg-[#140e1a]">
           <div class="absolute inset-0 pointer-events-none opacity-20" style="background-image: linear-gradient(to right, rgba(238, 140, 43, 0.1) 1px, transparent 1px), linear-gradient(to bottom, rgba(238, 140, 43, 0.1) 1px, transparent 1px); background-size: 40px 40px;"></div>
           
@@ -16,30 +16,26 @@ export function ProfileView(user) {
                 <span class="material-symbols-outlined">military_tech</span>
                 <span>Level ${user.level} ${user.title}</span>
              </div>
-             <p class="text-slate-500 text-sm">Member since October 2023</p>
 
-             <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-10 w-full max-w-[960px]">
-                <div class="glass-card rounded-xl p-6 relative overflow-hidden group">
+             <!-- Optimized Stats Grid -->
+             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-10 w-full max-w-[960px] justify-items-center">
+
+                <div class="glass-card rounded-xl p-6 relative overflow-hidden group text-center">
                    <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity text-primary">
                       <span class="material-symbols-outlined text-6xl">quiz</span>
                    </div>
                    <p class="text-slate-400 text-xs font-bold uppercase tracking-wider">Total Quizzes</p>
                    <p class="text-3xl font-bold text-white mt-1 font-display">${user.totalQuizzes}</p>
                 </div>
-                <div class="glass-card rounded-xl p-6 relative overflow-hidden group">
+
+                <div class="glass-card rounded-xl p-6 relative overflow-hidden group text-center">
                    <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity text-secondary">
                       <span class="material-symbols-outlined text-6xl">analytics</span>
                    </div>
                    <p class="text-slate-400 text-xs font-bold uppercase tracking-wider">Avg Accuracy</p>
                    <p class="text-3xl font-bold text-white mt-1 font-display">${user.avgAccuracy}%</p>
                 </div>
-                <div class="glass-card rounded-xl p-6 relative overflow-hidden group">
-                   <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity text-green-500">
-                      <span class="material-symbols-outlined text-6xl">local_fire_department</span>
-                   </div>
-                   <p class="text-slate-400 text-xs font-bold uppercase tracking-wider">Current Streak</p>
-                   <p class="text-3xl font-bold text-white mt-1 font-display">${user.streak} Days</p>
-                </div>
+
              </div>
           </div>
        </div>
@@ -138,3 +134,4 @@ export function ProfileView(user) {
     </div>
   `;
 }
+

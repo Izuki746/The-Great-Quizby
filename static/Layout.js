@@ -8,7 +8,7 @@ export function Layout(children, currentView, user, onChangeView, onLogout) {
       <div class="fixed inset-0 z-0 pointer-events-none">
          <div class="absolute top-0 right-0 w-[500px] h-[500px] bg-secondary/10 rounded-full blur-[100px] mix-blend-screen"></div>
          <div class="absolute bottom-0 left-0 w-[500px] h-[500px] bg-primary/5 rounded-full blur-[100px] mix-blend-screen"></div>
-         <div class="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-[0.03]"></div>
+         <!-- Removed the texture layer that caused 'Available Quizzes' -->
       </div>
 
       <!-- Header -->
