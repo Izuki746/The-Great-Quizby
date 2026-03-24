@@ -1,5 +1,30 @@
-// Profile View
+// static/ProfileView.js
 export function ProfileView(user) {
+  // generate dymanic HTML of history record
+  const historyHtml = user.quizHistory && user.quizHistory.length > 0 
+    ? user.quizHistory.slice().reverse().map(result => {
+        const acc = Math.round((result.correctAnswers / result.totalQuestions) * 100);
+        const dateStr = new Date(result.date).toLocaleDateString();
+        return `
+          <tr>
+             <td class="px-6 py-4">
+                <div class="flex items-center gap-3">
+                   <div class="bg-primary/10 p-2 rounded text-primary"><span class="material-symbols-outlined">quiz</span></div>
+                   <div><p class="font-bold text-white">${result.topic}</p><p class="text-xs text-slate-500">${result.totalQuestions} Questions</p></div>
+                </div>
+             </td>
+             <td class="px-6 py-4">
+                <span class="${acc >= 80 ? 'text-emerald-400 bg-emerald-400/10' : acc >= 50 ? 'text-yellow-400 bg-yellow-400/10' : 'text-red-400 bg-red-400/10'} font-bold px-2 py-1 rounded">
+                  ${acc}%
+                </span>
+             </td>
+             <td class="px-6 py-4">${dateStr}</td>
+             <td class="px-6 py-4 text-right"><span class="text-primary font-bold">+${result.score} pts</span></td>
+          </tr>
+        `;
+      }).join('') 
+    : `<tr><td colspan="4" class="px-6 py-8 text-center text-slate-500">No recent activity. Play a quick match to see your stats!</td></tr>`;
+
   return `
     <div class="flex-1 w-full overflow-hidden">
        <div class="relative w-full border-b border-white/10 bg-[#140e1a]">
@@ -17,22 +42,21 @@ export function ProfileView(user) {
                 <span>Level ${user.level} ${user.title}</span>
              </div>
 
-             <!-- Optimized Stats Grid -->
              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-10 w-full max-w-[960px] justify-items-center">
 
-                <div class="glass-card rounded-xl p-6 relative overflow-hidden group text-center">
+                <div class="glass-card rounded-xl p-6 relative overflow-hidden group text-center w-full max-w-sm">
                    <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity text-primary">
                       <span class="material-symbols-outlined text-6xl">quiz</span>
                    </div>
-                   <p class="text-slate-400 text-xs font-bold uppercase tracking-wider">Total Quizzes</p>
+                   <p class="text-slate-400 text-xs font-bold uppercase tracking-wider">Total Quizzes Made</p>
                    <p class="text-3xl font-bold text-white mt-1 font-display">${user.totalQuizzes}</p>
                 </div>
 
-                <div class="glass-card rounded-xl p-6 relative overflow-hidden group text-center">
+                <div class="glass-card rounded-xl p-6 relative overflow-hidden group text-center w-full max-w-sm">
                    <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity text-secondary">
                       <span class="material-symbols-outlined text-6xl">analytics</span>
                    </div>
-                   <p class="text-slate-400 text-xs font-bold uppercase tracking-wider">Avg Accuracy</p>
+                   <p class="text-slate-400 text-xs font-bold uppercase tracking-wider">Match Accuracy</p>
                    <p class="text-3xl font-bold text-white mt-1 font-display">${user.avgAccuracy}%</p>
                 </div>
 
@@ -42,7 +66,6 @@ export function ProfileView(user) {
 
        <div class="max-w-[960px] mx-auto py-8 px-4">
 
-          <!-- My Quizzes Section -->
           <h2 class="text-2xl font-bold text-white mb-6 flex items-center gap-3">
              <span class="material-symbols-outlined text-primary">folder_special</span>
              My Quizzes
@@ -63,17 +86,14 @@ export function ProfileView(user) {
 
                 <div class="flex items-center gap-4">
 
-                  <!-- Preview -->
                   <button class="text-primary hover:text-white" data-quiz-index="${i}">
                     <span class="material-symbols-outlined text-3xl">visibility</span>
                   </button>
 
-                  <!-- Edit -->
                   <button class="text-yellow-400 hover:text-yellow-600" data-edit-index="${i}">
                     <span class="material-symbols-outlined text-3xl">edit</span>
                   </button>
 
-                  <!-- Delete -->
                   <button class="text-red-400 hover:text-red-600" data-delete-index="${i}">
                     <span class="material-symbols-outlined text-3xl">delete</span>
                   </button>
@@ -89,7 +109,7 @@ export function ProfileView(user) {
 
           <h2 class="text-2xl font-bold text-white mb-6 flex items-center gap-3 mt-10">
              <span class="material-symbols-outlined text-primary">history</span>
-             Recent Activity
+             Recent Match Activity
           </h2>
           
           <div class="rounded-xl border border-white/10 overflow-hidden bg-surface">
@@ -97,35 +117,14 @@ export function ProfileView(user) {
                 <table class="w-full text-left">
                    <thead class="bg-white/5 text-xs font-bold text-slate-400 uppercase tracking-wider">
                       <tr>
-                         <th class="px-6 py-4">Quiz Name</th>
-                         <th class="px-6 py-4">Score</th>
+                         <th class="px-6 py-4">Category Topic</th>
+                         <th class="px-6 py-4">Accuracy</th>
                          <th class="px-6 py-4">Date</th>
-                         <th class="px-6 py-4 text-right">Action</th>
+                         <th class="px-6 py-4 text-right">Points Earned</th>
                       </tr>
                    </thead>
                    <tbody class="divide-y divide-white/5 text-sm text-slate-300">
-                      <tr>
-                         <td class="px-6 py-4">
-                            <div class="flex items-center gap-3">
-                               <div class="bg-primary/10 p-2 rounded text-primary"><span class="material-symbols-outlined">javascript</span></div>
-                               <div><p class="font-bold text-white">JavaScript Basics</p><p class="text-xs text-slate-500">10 Questions</p></div>
-                            </div>
-                         </td>
-                         <td class="px-6 py-4"><span class="text-emerald-400 font-bold bg-emerald-400/10 px-2 py-1 rounded">90%</span></td>
-                         <td class="px-6 py-4">Oct 12, 2023</td>
-                         <td class="px-6 py-4 text-right"><button class="text-primary hover:text-white"><span class="material-symbols-outlined">visibility</span></button></td>
-                      </tr>
-                      <tr>
-                         <td class="px-6 py-4">
-                            <div class="flex items-center gap-3">
-                               <div class="bg-secondary/10 p-2 rounded text-secondary"><span class="material-symbols-outlined">data_object</span></div>
-                               <div><p class="font-bold text-white">Python Data Science</p><p class="text-xs text-slate-500">15 Questions</p></div>
-                            </div>
-                         </td>
-                         <td class="px-6 py-4"><span class="text-yellow-400 font-bold bg-yellow-400/10 px-2 py-1 rounded">75%</span></td>
-                         <td class="px-6 py-4">Oct 10, 2023</td>
-                         <td class="px-6 py-4 text-right"><button class="text-primary hover:text-white"><span class="material-symbols-outlined">visibility</span></button></td>
-                      </tr>
+                      ${historyHtml}
                    </tbody>
                 </table>
              </div>
@@ -134,4 +133,3 @@ export function ProfileView(user) {
     </div>
   `;
 }
-
