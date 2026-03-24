@@ -37,7 +37,8 @@ const INITIAL_USER = {
   points: 0,
   avatarUrl: "https://api.dicebear.com/7.x/avataaars/svg?seed=Felix",
   quizzes: [],
-  quizHistory: [] // record question history in Trending categories
+  quizHistory: [] // record Trending Categories's questions history
+};
 
 class QuizbyApp {
   constructor() {
@@ -173,14 +174,18 @@ class QuizbyApp {
     this.changeView(AppView.RESULTS);
   }
 
+
   // -----------------------------
   // MATCH START (QUICK MATCH)
   // -----------------------------
   handleQuestionsGenerated(questions, config) {
-    this.questions = questions;      // 把生成的题目存入全局状态
-    this.currentConfig = config;     // 存入当前测验的配置
-    this.changeView(AppView.PLAY_QUIZ); // 完美跳转到答题页面！
+    this.questions = questions;  
+    this.currentConfig = config;    
+    this.changeView(AppView.PLAY_QUIZ); 
   }
+
+
+ 
 
   // -----------------------------
   // LOGOUT
