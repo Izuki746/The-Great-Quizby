@@ -2,12 +2,11 @@
 import { Button } from './Button.js';
 import { generateQuizQuestions } from './quizService.js';
 
-// set the category to global
+let isLoading = false;
+let loadingText = 'Initializing...';
 let activeModalCategory = null;
 
 export function QuickMatchView(onQuestionsGenerated, onBack) {
-  let isLoading = false;
-  let loadingText = 'Initializing...';
 
   const categories = [
     { name: 'World Culture', icon: 'public', color: 'text-blue-400', img: 'https://images.unsplash.com/photo-1521295121783-8a321d551ad2?auto=format&fit=crop&q=80&w=400', topic: 'World Culture' },
@@ -16,57 +15,49 @@ export function QuickMatchView(onQuestionsGenerated, onBack) {
     { name: 'Global History', icon: 'history_edu', color: 'text-yellow-400', img: 'https://images.unsplash.com/photo-1541194577687-8c63bf9e7ee3?auto=format&fit=crop&q=80&w=400', topic: 'Global History' },
   ];
 
- 
   const mockLeaderboards = {
     'World Culture': [
       { name: 'AlexTheGreat', score: 9800, avatar: 'person' },
       { name: 'GlobeTrotter', score: 8500, avatar: 'explore' },
-      { name: 'MapReader', score: 7200, avatar: 'map' },
-      { name: 'CultureVulture', score: 6500, avatar: 'museum' },
-      { name: 'NomadLife', score: 5900, avatar: 'flight_takeoff' },
-      { name: 'EarthChild', score: 5100, avatar: 'public' }
+      { name: 'MapReader', score: 7200, avatar: 'map' }
     ],
     'Cinema & TV': [
       { name: 'MovieBuff', score: 12500, avatar: 'theaters' },
       { name: 'PopcornKing', score: 11200, avatar: 'fastfood' },
-      { name: 'DirectorCut', score: 9800, avatar: 'videocam' },
-      { name: 'Cinephile', score: 8400, avatar: 'movie' },
-      { name: 'BingeWatcher', score: 7900, avatar: 'tv' },
-      { name: 'ScriptKiddie', score: 7100, avatar: 'description' }
+      { name: 'DirectorCut', score: 9800, avatar: 'videocam' }
     ],
     'Food & Drink': [
       { name: 'ChefMaster', score: 8900, avatar: 'local_dining' },
       { name: 'Taster01', score: 8100, avatar: 'ramen_dining' },
-      { name: 'SpicyLover', score: 7600, avatar: 'local_fire_department' },
-      { name: 'SweetTooth', score: 6800, avatar: 'icecream' },
-      { name: 'CoffeeAddict', score: 6200, avatar: 'local_cafe' },
-      { name: 'VeganPower', score: 5500, avatar: 'eco' }
+      { name: 'SpicyLover', score: 7600, avatar: 'local_fire_department' }
     ],
     'Global History': [
       { name: 'TimeTraveler', score: 10200, avatar: 'hourglass_empty' },
       { name: 'DinoRider', score: 9400, avatar: 'pets' },
-      { name: 'OldScrolls', score: 8800, avatar: 'history' },
-      { name: 'Pharaoh', score: 8100, avatar: 'account_balance' },
-      { name: 'KnightRider', score: 7500, avatar: 'shield' },
-      { name: 'Scholar', score: 6900, avatar: 'menu_book' }
+      { name: 'OldScrolls', score: 8800, avatar: 'history' }
     ]
   };
 
   const handleSelect = async (topic) => {
+    if (isLoading) return;
     isLoading = true;
     loadingText = 'Connecting to neural network...';
     window.quizbyApp.render();
 
-    const config = {
-      topic,
-      difficulty: 'Standard',
-      questionCount: 5
-    };
+    const config = { topic, difficulty: 'Standard', questionCount: 5 };
 
     try {
-      loadingText = 'Synthesizing questions...';
       const questions = await generateQuizQuestions(config);
-      onQuestionsGenerated(questions, config);
+      isLoading = false; 
+      
+      // ⭐ 安全回调：双重保险防止跳转失败
+      if (typeof onQuestionsGenerated === 'function') {
+        onQuestionsGenerated(questions, config);
+      } else if (window.quizbyApp && window.quizbyApp.handleQuestionsGenerated) {
+        window.quizbyApp.handleQuestionsGenerated(questions, config);
+      } else {
+        console.error("Routing failed.");
+      }
     } catch (e) {
       console.error(e);
       loadingText = 'Fallback protocol activated...';
@@ -87,35 +78,25 @@ export function QuickMatchView(onQuestionsGenerated, onBack) {
 
   setTimeout(() => {
     const backBtn = document.getElementById('quick-back-btn');
-    if (backBtn) {
-      backBtn.addEventListener('click', onBack);
-    }
+    if (backBtn) backBtn.addEventListener('click', onBack);
 
     document.querySelectorAll('.category-card').forEach((card, idx) => {
       card.addEventListener('click', () => handleSelect(categories[idx].topic));
     });
 
-
     document.querySelectorAll('.view-rankings-btn').forEach(btn => {
       btn.addEventListener('click', (e) => {
-        const topic = e.currentTarget.dataset.topic;
-        openModal(topic);
+        openModal(e.currentTarget.dataset.topic);
       });
     });
 
-
     const closeModalBtn = document.getElementById('close-modal-btn');
-    if (closeModalBtn) {
-      closeModalBtn.addEventListener('click', closeModal);
-    }
-
+    if (closeModalBtn) closeModalBtn.addEventListener('click', closeModal);
 
     const modalBackdrop = document.getElementById('modal-backdrop');
     if (modalBackdrop) {
       modalBackdrop.addEventListener('click', (e) => {
-        if (e.target === modalBackdrop) {
-          closeModal();
-        }
+        if (e.target === modalBackdrop) closeModal();
       });
     }
   }, 0);
@@ -145,8 +126,6 @@ export function QuickMatchView(onQuestionsGenerated, onBack) {
       3: 'text-amber-600 font-bold text-lg',
     };
     const rankStyle = rankColors[rank] || 'text-slate-500 font-mono text-sm';
-    
- 
     const paddingClass = isModal ? 'p-3 mb-2' : 'p-2';
 
     return `
@@ -163,18 +142,14 @@ export function QuickMatchView(onQuestionsGenerated, onBack) {
     `;
   };
 
-
   const renderModal = () => {
     if (!activeModalCategory) return '';
-    
     const categoryInfo = categories.find(c => c.topic === activeModalCategory);
     const players = mockLeaderboards[activeModalCategory] || [];
 
     return `
       <div id="modal-backdrop" class="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-200">
          <div class="bg-surface border border-white/10 rounded-2xl w-full max-w-md shadow-2xl overflow-hidden flex flex-col max-h-[80vh] transform transition-all scale-100 animate-in zoom-in-95 duration-200">
-            
-            <!-- head of the window -->
             <div class="p-6 border-b border-white/10 flex items-center justify-between bg-white/5 relative overflow-hidden">
                <div class="absolute inset-0 bg-gradient-to-r from-primary/10 to-transparent"></div>
                <div class="relative z-10 flex items-center gap-3">
@@ -188,11 +163,8 @@ export function QuickMatchView(onQuestionsGenerated, onBack) {
                   <span class="material-symbols-outlined text-2xl">close</span>
                </button>
             </div>
-            
-            <!-- 弹窗列表 -->
             <div class="p-6 overflow-y-auto flex-1 custom-scrollbar">
                ${players.map((player, index) => renderPlayerRow(player, index + 1, true)).join('')}
-               
                <div class="mt-6 pt-6 border-t border-white/10 text-center">
                   <p class="text-slate-500 text-xs uppercase tracking-widest flex items-center justify-center gap-2">
                     <span class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
@@ -208,8 +180,6 @@ export function QuickMatchView(onQuestionsGenerated, onBack) {
   return `
     <div class="flex-1 flex flex-col items-center p-6 md:p-12 max-w-7xl mx-auto w-full overflow-y-auto">
       <div class="w-full space-y-12 animate-fade-in mt-4">
-         
-         <!-- categories choose module -->
          <div>
              <div class="flex items-center justify-between mb-6">
                 <div>
@@ -241,7 +211,6 @@ export function QuickMatchView(onQuestionsGenerated, onBack) {
              </div>
          </div>
 
-         <!-- 底部：名人堂排行榜模块 -->
          <div class="pt-8 border-t border-white/10">
              <div class="mb-6 flex items-center gap-3">
                 <span class="material-symbols-outlined text-yellow-500 text-3xl">emoji_events</span>
@@ -260,11 +229,9 @@ export function QuickMatchView(onQuestionsGenerated, onBack) {
                         <h3 class="text-white font-bold text-sm tracking-wide">${cat.name}</h3>
                      </div>
                      <div class="space-y-2 flex-1">
-                        <!-- only show top 3 -->
                         ${(mockLeaderboards[cat.topic] || []).slice(0, 3).map((player, index) => renderPlayerRow(player, index + 1)).join('')}
                      </div>
                      <div class="mt-4 pt-3 text-center border-t border-white/5">
-                         <!-- 增加了 view-rankings-btn class 和 data-topic 属性 -->
                          <button class="view-rankings-btn text-xs text-slate-400 hover:text-primary transition-colors font-medium uppercase tracking-wider" data-topic="${cat.topic}">
                             View Full Rankings
                          </button>
@@ -273,12 +240,8 @@ export function QuickMatchView(onQuestionsGenerated, onBack) {
                 `).join('')}
              </div>
          </div>
-
       </div>
-      
-      <!-- add window HTML -->
       ${renderModal()}
-
     </div>
   `;
 }
