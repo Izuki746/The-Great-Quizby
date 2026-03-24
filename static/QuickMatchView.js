@@ -50,7 +50,7 @@ export function QuickMatchView(onQuestionsGenerated, onBack) {
       const questions = await generateQuizQuestions(config);
       isLoading = false; 
       
-      // ⭐ 安全回调：双重保险防止跳转失败
+      // safety callback
       if (typeof onQuestionsGenerated === 'function') {
         onQuestionsGenerated(questions, config);
       } else if (window.quizbyApp && window.quizbyApp.handleQuestionsGenerated) {
