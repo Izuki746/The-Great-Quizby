@@ -50,7 +50,7 @@ export function QuickMatchView(onQuestionsGenerated, onBack) {
       const questions = await generateQuizQuestions(config);
       isLoading = false; 
       
-      // safety callback
+
       if (typeof onQuestionsGenerated === 'function') {
         onQuestionsGenerated(questions, config);
       } else if (window.quizbyApp && window.quizbyApp.handleQuestionsGenerated) {
