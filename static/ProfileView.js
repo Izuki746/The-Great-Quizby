@@ -1,6 +1,5 @@
 // static/ProfileView.js
 export function ProfileView(user) {
-  // generate dymanic HTML of history record
   const historyHtml = user.quizHistory && user.quizHistory.length > 0 
     ? user.quizHistory.slice().reverse().map(result => {
         const acc = Math.round((result.correctAnswers / result.totalQuestions) * 100);
