@@ -59,11 +59,19 @@ def migrate_database():
         else:
             print(" is_official column already exists")     
         # Commit changes to database
+        cursor.execute(
+            '''UPDATE users
+                SET is_admin = 1
+                WHERE username = ?''',("VIRAL_ADMIN", )
+        )
         conn.commit()
         print("\n✅ Database migration completed successfully!")
         print("\n📝 NOTE: Existing users with password_hash will still work,")
         print("   but new Firebase users won't have password_hash (which is fine).")
         print("   Firebase handles authentication, SQLite only stores profiles.")
+
+        
+        
         
     except Exception as e:
         print(f"❌ Migration error: {e}")

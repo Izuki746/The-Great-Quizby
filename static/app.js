@@ -78,6 +78,7 @@ class QuizbyApp {
         if (data.success){
           this.user = { ...this.user, ...data.user } 
           this.username=data.user.username
+          await this.fetchAvailableQuizzes()
           await this.fetchMyQuizzes()
           this.changeView(AppView.DASHBOARD)
         }
@@ -99,6 +100,7 @@ class QuizbyApp {
     this.editingQuizId = null;
   }
     if(view==AppView.QUICK_MATCH || view==AppView.PROFILE){
+      await this.fetchAvailableQuizzes()
       await this.fetchMyQuizzes()
       console.log("myQuizzes:", this.myQuizzes);
     }
@@ -436,7 +438,10 @@ class QuizbyApp {
   async handleQuizComplete(result) {
     console.log("currentConfig:", this.currentConfig);
     console.log("result:", result);
-    this.lastResult = result;
+    this.lastResult = {
+      ...result,
+      topic: this.currentConfig?.title || "your"
+    };
     this.user.totalQuizzes += 1;
     //this.user.points += result.score;
     //this.user.streak = Math.max(this.user.streak, result.streak);
@@ -457,8 +462,13 @@ class QuizbyApp {
     this.changeView(AppView.AUTH);
   }
 
-  async handlePlayUserquiz(quizId){
-    const response = await fetch(`/quiz/${quizId}`);
+  async handlePlayUserquiz(quizId, quizTitle){
+    const token = getStoredToken();
+    const response = await fetch(`/quiz/${quizId}`, {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
     const data= await response.json();
     if (data.success) {
       this.questions = data.questions
@@ -469,7 +479,7 @@ class QuizbyApp {
     }
     this.previewQuiz = null;
     this.editingQuizId = null;
-    this.currentConfig={quizId: quizId}  
+    this.currentConfig={quizId: quizId, title:quizTitle}  
     this.changeView(AppView.PLAY_QUIZ)
     }
   }
@@ -607,7 +617,7 @@ class QuizbyApp {
       case AppView.QUICK_MATCH:
         
         viewContent = QuickMatchView(
-          this.myQuizzes,
+          this.myQuizzes, this.availableQuizzes,
           (q, c) => this.handleQuestionsGenerated(q, c),
           (quizId, quizTitle) => this.handlePlayUserquiz(quizId, quizTitle),
           () => this.changeView(AppView.DASHBOARD) // 点击 Back 时返回主页
@@ -642,7 +652,17 @@ class QuizbyApp {
         break;
 
       case AppView.RESULTS:
-        viewContent = ResultsView(this.lastResult, (v) => this.changeView(v));
+        viewContent = ResultsView(
+          this.lastResult,
+          (v) => this.changeView(v),
+          () => {
+            const quizId = this.currentConfig?.quizId;
+            const quizTitle = this.currentConfig?.title;
+            if (quizId) {
+              this.handlePlayUserquiz(quizId, quizTitle);
+            }
+          }
+        );
         break;
 
       case AppView.PROFILE:
@@ -683,7 +703,8 @@ class QuizbyApp {
       document.querySelectorAll("[data-quiz-id]").forEach(btn => {
         btn.addEventListener("click", () => {
           const quizId = Number(btn.getAttribute("data-quiz-id"));
-          this.handlePreviewQuiz(quizId)
+          const quizTitle = btn.getAttribute("data-play-title");
+          this.handlePreviewQuiz(quizId, quizTitle)
 
           // if (!this.previewQuiz){
           //   alert("Quiz not found!!!")

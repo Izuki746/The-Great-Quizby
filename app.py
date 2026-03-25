@@ -151,8 +151,10 @@ def signup():
 def debug_users():
     conn = get_db()
     cursor = conn.cursor()
-    cursor.execute("SELECT id, username, firebase_uid, email FROM users")
+
+    cursor.execute("SELECT * FROM users")
     rows = cursor.fetchall()
+
     conn.close()
     return jsonify(rows)
 
@@ -183,7 +185,7 @@ def login():
         cursor = conn.cursor()
 
         cursor.execute(
-            "SELECT id, username, created_at FROM users WHERE firebase_uid = ?",
+            "SELECT id, username, is_admin, created_at FROM users WHERE firebase_uid = ?",
             (firebase_uid,)
         )
 
@@ -203,21 +205,25 @@ def login():
             
             user_id = cursor.lastrowid  # Get ID of newly created user
             username_db = default_username
+            created_at="just now"
+            is_admin=0
         else:
             # User exists, use data from database
             user_id = user[0]
             username_db = user[1]
-            created_at = user[2]
+            created_at = user[3]
+            is_admin = user[2]
         
         # Store in Flask session for compatibility with existing code
         # Session data is stored server-side (encrypted cookie)
         session["user_id"] = user_id
         session["user"] = username_db
+        session["created_at"] = created_at
         
         # Return success with user data
         return jsonify({
             "success": True, 
-            "user": {"id": user_id, "username": username_db, "created_at":created_at}
+            "user": {"id": user_id, "username": username_db, "created_at": created_at, "is_admin": is_admin}
         })
     
     except Exception as e:
@@ -287,7 +293,7 @@ def me():
     conn=get_db()
     cursor=conn.cursor()
     cursor.execute(
-        '''SELECT id,username, created_at FROM users WHERE firebase_uid=?''',(firebase_uid,)
+        '''SELECT id, username, created_at, is_admin FROM users WHERE firebase_uid=?''',(firebase_uid,)
     )
     user=cursor.fetchone()
     conn.close()
@@ -299,7 +305,8 @@ def me():
     "user": {
         "id": user[0],
         "username": user[1],
-        "created_at": user[2]
+        "created_at": user[2],
+        "is_admin": user[3]
     }
 })
 
@@ -322,14 +329,45 @@ def get_quizzes():
             "difficulty": row[3]
         })
 
-    return jsonify(quizzes)
+    return jsonify({
+        "success":True,
+        "quizzes":quizzes
+    })
 
 
-@app.route("/quiz/<int:quiz_id>")    
+@app.route("/quiz/<int:quiz_id>")  
+@verify_firebase_token  
 def get_quiz(quiz_id):
+    firebase_uid=request.firebase_user.get('uid')
     conn=get_db()
     cursor=conn.cursor()
-
+    cursor.execute(
+        '''SELECT id, is_admin FROM users WHERE firebase_uid=?''',(firebase_uid, )
+    )
+    user=cursor.fetchone()
+    if not user:
+        conn.close()
+        return jsonify({"success": False, "error": "User not found"}), 404
+    user_id=user[0]
+    is_admin=user[1]
+    cursor.execute(
+        '''SELECT id, creator_id, is_public, is_official FROM quizzes WHERE id = ?''',(quiz_id, )
+    )
+    quiz=cursor.fetchone()
+    if not quiz:
+        conn.close()
+        return jsonify({"success": False, "error": "Quiz not found"}), 404
+    is_official=quiz[3]
+    creator_id=quiz[1]
+    is_public=quiz[2]
+    can_view = (
+    (is_public == 1 and is_official == 1) or
+    (creator_id == user_id) or
+    (is_admin == 1)
+    )
+    if not can_view:
+        conn.close()
+        return jsonify({"success": False, "error": "Unauthorized"}), 403
     cursor.execute(
         ''' SELECT id, question_text, option_a, option_b, option_c, option_d FROM questions WHERE quiz_id=?''', (quiz_id,)
     )
@@ -388,15 +426,17 @@ def create_quiz():
     conn=get_db()
     cursor=conn.cursor()
     cursor.execute(
-        '''SELECT id FROM users where firebase_uid=?''',(firebase_uid,)
+        '''SELECT id, is_admin FROM users where firebase_uid=?''',(firebase_uid,)
     )
     user=cursor.fetchone()
     if not user:
         return jsonify({"success": False, "error": "User not found"}), 404
     user_id=user[0]
+    is_admin=user[1]
+    is_official=1 if is_admin else 0
     cursor.execute(
-        "INSERT INTO quizzes (title, difficulty, is_public, creator_id) VALUES (?, ?, ?, ?)",
-        (data['name'], data['difficulty'], data['isPublic'], user_id)
+        "INSERT INTO quizzes (title, difficulty, is_public, creator_id, is_official) VALUES (?, ?, ?, ?, ?)",
+        (data['name'], data['difficulty'], data['isPublic'], user_id, is_official)
     )
     quiz_id=cursor.lastrowid
     for q in data['questions']:
@@ -443,28 +483,33 @@ def delete_quiz(quiz_id):
     firebase_uid = request.firebase_user.get('uid')
     cursor=conn.cursor()
     cursor.execute(
-        '''SELECT id FROM users where firebase_uid=?''',(firebase_uid,)
+        '''SELECT id, is_admin FROM users where firebase_uid=?''',(firebase_uid,)
     )
     user=cursor.fetchone()
     if not user:
         return jsonify({"success": False, "error": "User not found"}), 404
     user_id=user[0]
+    is_admin=user[1]
     cursor.execute(
-        "SELECT id FROM quizzes WHERE id = ? AND creator_id = ?",
-        (quiz_id, user_id)
+        "SELECT id, is_official, creator_id FROM quizzes WHERE id = ? ",
+        (quiz_id, )
     )
     quiz = cursor.fetchone()
     if not quiz:
         conn.close()
         return jsonify({"success": False, "error": "Quiz not found"}), 404
-    cursor.execute(
-        "DELETE FROM questions WHERE quiz_id = ?",
-        (quiz_id,)
-    )
-    cursor.execute(
-        "DELETE FROM quizzes WHERE id = ? AND creator_id = ?",
-        (quiz_id, user_id)
-    )
+    is_official=quiz[1]
+    creator_id=quiz[2]
+
+    can_edit=( (is_admin==1 and is_official==1) or (creator_id==user_id and is_official==0))
+    if not can_edit:
+        conn.close()
+        return jsonify({ 'success': False, 'error': "Unauthorized"}), 403    
+    cursor.execute("DELETE FROM questions WHERE quiz_id = ?", (quiz_id,))
+    if is_admin == 1:
+        cursor.execute("DELETE FROM quizzes WHERE id = ?", (quiz_id,))
+    else:
+        cursor.execute("DELETE FROM quizzes WHERE id = ? AND creator_id = ?", (quiz_id, user_id))
     conn.commit()
     conn.close()
     return jsonify({"success": True, "message": "Quiz deleted"})
@@ -477,20 +522,27 @@ def edit_quiz(quiz_id):
     firebase_uid = request.firebase_user.get('uid')
     cursor=conn.cursor()
     cursor.execute(
-        '''SELECT id FROM users where firebase_uid=?''',(firebase_uid,)
+        '''SELECT id, is_admin FROM users where firebase_uid=?''',(firebase_uid,)
     )
     user=cursor.fetchone()
     if not user:
         return jsonify({"success": False, "error": "User not found"}), 404
     user_id=user[0]
+    is_admin=user[1]
     cursor.execute(
-        "SELECT id FROM quizzes WHERE id = ? AND creator_id = ?",
-        (quiz_id, user_id)
+        "SELECT id,is_official, creator_id FROM quizzes WHERE id = ? ",
+        (quiz_id, )
     )
     quiz = cursor.fetchone()
     if not quiz:
         conn.close()
         return jsonify({"success": False, "error": "Quiz not found"}), 404
+    is_official=quiz[1]
+    creator_id=quiz[2]
+    can_edit=( (is_admin==1 and is_official==1) or (creator_id==user_id and is_official==0))
+    if not can_edit:
+        conn.close()
+        return jsonify({ 'success': False, 'error': "Unauthorized"}), 403
     cursor.execute(
         ''' SELECT id, question_text, option_a, option_b, option_c, option_d, correct_answer FROM questions WHERE quiz_id=?''', (quiz_id,)
     )
@@ -518,21 +570,28 @@ def update_quiz(quiz_id):
     firebase_uid = request.firebase_user.get('uid')
     cursor=conn.cursor()
     cursor.execute(
-        '''SELECT id FROM users where firebase_uid=?''',(firebase_uid,)
+        '''SELECT id, is_admin FROM users where firebase_uid=?''',(firebase_uid,)
     )
     user=cursor.fetchone()
     if not user:
         conn.close()
         return jsonify({"success": False, "error": "User not found"}), 404
     user_id=user[0]
+    is_admin=user[1]
     cursor.execute(
-        "SELECT id FROM quizzes WHERE id = ? AND creator_id = ?",
-        (quiz_id, user_id)
+        "SELECT id, is_official, creator_id FROM quizzes WHERE id = ? ",
+        (quiz_id, )
     )
     quiz = cursor.fetchone()
     if not quiz:
         conn.close()
         return jsonify({"success": False, "error": "Quiz not found"}), 404
+    is_official=quiz[1]
+    creator_id=quiz[2]
+    can_edit=( (is_admin==1 and is_official==1) or (creator_id==user_id and is_official==0))
+    if not can_edit:
+        conn.close()
+        return jsonify({ 'success': False, 'error': "Unauthorized"}), 403
     cursor.execute(
         '''UPDATE quizzes
         SET title=?

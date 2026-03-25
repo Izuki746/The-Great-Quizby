@@ -1,7 +1,7 @@
 // Results View
 import { Button } from './Button.js';
 
-export function ResultsView(result, onViewChange) {
+export function ResultsView(result, onViewChange, onPLayAgain) {
   const accuracy = Math.round((result.correctAnswers / result.totalQuestions) * 100);
 
   setTimeout(() => {
@@ -12,7 +12,7 @@ export function ResultsView(result, onViewChange) {
       dashboardBtn.addEventListener('click', () => onViewChange('DASHBOARD'));
     }
     if (playAgainBtn) {
-      playAgainBtn.addEventListener('click', () => onViewChange('CREATE_QUIZ'));
+      playAgainBtn.addEventListener('click', onPLayAgain);
     }
   }, 0);
 
