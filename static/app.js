@@ -11,7 +11,7 @@ import { ResultsView } from './ResultsView.js';
 import { ProfileView } from './ProfileView.js';
 import { Layout } from './Layout.js';
 import { HomeView } from './homeView.js';
-import { QuizPreviewView } from './QuizPreviewView.js';   // ⭐ 新增
+import { QuizPreviewView } from './QuizPreviewView.js';   // New added
 // ============================================
 // FIREBASE AUTHENTICATION IMPORTS
 // ============================================
@@ -30,20 +30,21 @@ const AppView = {
   PLAY_QUIZ: 'PLAY_QUIZ',
   RESULTS: 'RESULTS',
   PROFILE: 'PROFILE',
-  PREVIEW_QUIZ: 'PREVIEW_QUIZ',   // ⭐ 新增
+  PREVIEW_QUIZ: 'PREVIEW_QUIZ',   // New added
 };
 
 // Initial User Profile
 const INITIAL_USER = {
-  name: "Quizby Student",
-  email: "student@learning.ai",
+  name: "",
+  email: "",
   level: 1,
   title: "Novice Scholar",
   totalQuizzes: 0,
   avgAccuracy: 0,
-  streak: 0,
   points: 0,
-  avatarUrl: "https://api.dicebear.com/7.x/avataaars/svg?seed=Felix"
+  avatarUrl: "https://api.dicebear.com/7.x/avataaars/svg?seed=Felix",
+  quizzes: [],
+  quizHistory: [] // New added：For record all quizzes user done
 };
 
 class QuizbyApp {
@@ -56,8 +57,8 @@ class QuizbyApp {
     this.myQuizzes=[];
     this.availableQuizzes=[];
 
-    this.previewQuiz = null;        // ⭐ 用于 Preview 和 Edit
-    this.editingQuizId = null;   // ⭐ 用于 Edit
+    this.previewQuiz = null;        // For Preview and Edit
+    this.editingQuizId = null;   // For Edit
 
     this.rootElement = document.getElementById('root');
     this.init();
@@ -435,20 +436,40 @@ class QuizbyApp {
   this.myQuizzes = Array.isArray(result) ? result : [];
 }
 
-  async handleQuizComplete(result) {
-    console.log("currentConfig:", this.currentConfig);
-    console.log("result:", result);
-    this.lastResult = {
-      ...result,
-      topic: this.currentConfig?.title || "your"
-    };
-    this.user.totalQuizzes += 1;
-    //this.user.points += result.score;
-    //this.user.streak = Math.max(this.user.streak, result.streak);
-    this.user.level = Math.floor(this.user.points / 500) + 1;
+// -----------------------------
+  // QUIZ COMPLETE
+  // -----------------------------
+  handleQuizComplete(result) {
+    this.lastResult = result;
+    this.user.points += result.score;
+    
+    // record test history
+    if (!this.user.quizHistory) this.user.quizHistory = [];
+    this.user.quizHistory.push(result);
+    
+    // dynamic calculate average accuracy
+    let totalCorrect = 0;
+    let totalQuestions = 0;
+    this.user.quizHistory.forEach(r => {
+      totalCorrect += r.correctAnswers;
+      totalQuestions += r.totalQuestions;
+    });
+    
+    this.user.avgAccuracy = totalQuestions > 0 ? Math.round((totalCorrect / totalQuestions) * 100) : 0;
+    
     this.changeView(AppView.RESULTS);
   }
 
+    // -----------------------------
+  // MATCH START (QUICK MATCH)
+  // -----------------------------
+  handleQuestionsGenerated(questions, config) {
+    this.questions = questions;
+    this.currentConfig = config;
+    this.changeView(AppView.PLAY_QUIZ);
+  }
+
+  
   /**
    * Handle user logout
    * Signs out from Firebase and clears stored token
