@@ -127,18 +127,18 @@ def signup():
         # email is the user's real email (from Firebase token or request body)
         # Note: We don't store password_hash because Firebase handles authentication
         cursor.execute(
-            "INSERT INTO users (username, firebase_uid, email) VALUES (?, ?, ?)",
+            "INSERT INTO users (username, firebase_uid, email, created_at) VALUES (?, ?, ?, CURRENT_TIMESTAMP)",
             (username, firebase_uid, firebase_email or email)
         )
 
         conn.commit()
         return jsonify({"success": True, "message": "Profile created"})
 
-    except sqlite3.IntegrityError:
-        # Username already exists in database
+    except sqlite3.IntegrityError as e:
         if conn:
             conn.rollback()
-        return jsonify({"success": False, "error": "Username already exists"})
+        print("IntegrityError during signup:", e)
+        return jsonify({"success": False, "error": str(e)})
     except Exception as e:
         if conn:
             conn.rollback()
@@ -147,6 +147,14 @@ def signup():
         if conn:
             conn.close()
 
+@app.route("/debug-users")
+def debug_users():
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT id, username, firebase_uid, email FROM users")
+    rows = cursor.fetchall()
+    conn.close()
+    return jsonify(rows)
 
 @app.route("/login", methods=['POST'])
 @verify_firebase_token  # Verifies Firebase token before executing
@@ -175,7 +183,7 @@ def login():
         cursor = conn.cursor()
 
         cursor.execute(
-            "SELECT id, username FROM users WHERE firebase_uid = ?",
+            "SELECT id, username, created_at FROM users WHERE firebase_uid = ?",
             (firebase_uid,)
         )
 
@@ -188,7 +196,7 @@ def login():
             default_username = username or (email or firebase_email).split('@')[0]
             
             cursor.execute(
-                "INSERT INTO users (username, firebase_uid, email) VALUES (?, ?, ?)",
+                "INSERT INTO users (username, firebase_uid, email, created_at) VALUES (?, ?, ?, CURRENT_TIMESTAMP)",
                 (default_username, firebase_uid, firebase_email or email)
             )
             conn.commit()
@@ -199,6 +207,7 @@ def login():
             # User exists, use data from database
             user_id = user[0]
             username_db = user[1]
+            created_at = user[2]
         
         # Store in Flask session for compatibility with existing code
         # Session data is stored server-side (encrypted cookie)
@@ -208,7 +217,7 @@ def login():
         # Return success with user data
         return jsonify({
             "success": True, 
-            "user": {"id": user_id, "username": username_db}
+            "user": {"id": user_id, "username": username_db, "created_at":created_at}
         })
     
     except Exception as e:
@@ -272,14 +281,27 @@ def logout():
 
 
 @app.route("/me")
+@verify_firebase_token
 def me():
-    if "user" not in session:
-        return jsonify({"logged_in": False}), 401
+    firebase_uid=request.firebase_user.get('uid')
+    conn=get_db()
+    cursor=conn.cursor()
+    cursor.execute(
+        '''SELECT id,username, created_at FROM users WHERE firebase_uid=?''',(firebase_uid,)
+    )
+    user=cursor.fetchone()
+    conn.close()
+    if not user:
+        return jsonify({"success": False, "error": "User not found"}), 404
 
     return jsonify({
-        "logged_in": True,
-        "username": session["user"]
-    })
+    "success": True,
+    "user": {
+        "id": user[0],
+        "username": user[1],
+        "created_at": user[2]
+    }
+})
 
 @app.route("/quizzes")
 def get_quizzes():
@@ -287,8 +309,7 @@ def get_quizzes():
     cursor=conn.cursor()
 
     cursor.execute(
-        '''SELECT id, title, description, difficulty FROM quizzes WHERE is_public=1
-''')
+        '''SELECT id, title, description, difficulty FROM quizzes WHERE is_public=1 AND is_official=1''')
     rows = cursor.fetchall()
     conn.close()
 
@@ -319,14 +340,229 @@ def get_quiz(quiz_id):
     for row in rows:
         questions.append({
             'id': row[0],
-            "question": row[0],
-            "options": [row[1], row[2], row[3], row[4]],
-            "correctAnswer": row[5]
+            "question": row[1],
+            "options": [row[2], row[3], row[4], row[5]],
+           # "correctAnswer": row[6]
         })
     return jsonify({
     "success": True,
     "questions": questions
     })
+
+@app.route("/submit-quiz/<int:quiz_id>", methods=["POST"])
+def submit_quiz(quiz_id):
+    data=request.get_json()
+    conn=get_db()
+    cursor=conn.cursor()
+
+    cursor.execute(
+        '''SELECT id, correct_answer from questions where quiz_id=?''',
+        (quiz_id, )
+    )
+    rows=cursor.fetchall()
+    conn.close()
+    correct_answers={}
+    for row in rows:
+        question_id=row[0]
+        correct_answer=row[1]
+        correct_answers[question_id]=correct_answer
+    answers=data.get("answers", []) 
+    correct_count=0
+    for answer in answers:
+        question_id = answer.get("question_id")
+        selected = answer.get("selected")  
+        if selected==correct_answers.get(question_id):
+            correct_count+=1
+    score=correct_count*100
+    return jsonify({
+        "score": score,
+        "success": True,
+        "totalQuestions":len(correct_answers),
+        "correctAnswers": correct_count 
+    })    
+@app.route("/create-quiz", methods=["POST"])   
+@verify_firebase_token 
+def create_quiz():
+    firebase_uid = request.firebase_user.get('uid')
+    data=request.get_json()
+    conn=get_db()
+    cursor=conn.cursor()
+    cursor.execute(
+        '''SELECT id FROM users where firebase_uid=?''',(firebase_uid,)
+    )
+    user=cursor.fetchone()
+    if not user:
+        return jsonify({"success": False, "error": "User not found"}), 404
+    user_id=user[0]
+    cursor.execute(
+        "INSERT INTO quizzes (title, difficulty, is_public, creator_id) VALUES (?, ?, ?, ?)",
+        (data['name'], data['difficulty'], data['isPublic'], user_id)
+    )
+    quiz_id=cursor.lastrowid
+    for q in data['questions']:
+        correct_letter=chr(97+q['answer'])
+        cursor.execute(
+            '''INSERT INTO questions (quiz_id, question_text, option_a, option_b, option_c, option_d, correct_answer) VALUES (?, ?, ?, ?, ?, ?, ?)'''
+            ,(quiz_id, q['question'], q['options'][0], q['options'][1], q['options'][2], q['options'][3], correct_letter)
+    )
+    conn.commit()
+    conn.close()
+    return jsonify({"success": True, "quiz_id": quiz_id})
+
+@app.route("/my-quizzes", methods=['GET'])
+@verify_firebase_token
+def my_quizzes():
+    quizzes=[]
+    conn=get_db()
+    firebase_uid = request.firebase_user.get('uid')
+    cursor=conn.cursor()
+    cursor.execute(
+        '''SELECT id FROM users where firebase_uid=?''',(firebase_uid,)
+    )
+    user=cursor.fetchone()
+    if not user:
+        return jsonify({"success": False, "error": "User not found"}), 404
+    user_id=user[0]
+    cursor.execute(
+        '''SELECT id, title, difficulty FROM quizzes where creator_id=?''', (user_id,)
+    )
+    rows=cursor.fetchall()
+    for row in rows:
+        quizzes.append({
+            'id':row[0],
+            'title':row[1],
+            'difficulty': row[2]
+        })
+    conn.close()    
+    return jsonify(quizzes)
+
+@app.route("/delete-quiz/<int:quiz_id>", methods=['POST'])
+@verify_firebase_token
+def delete_quiz(quiz_id):
+    conn=get_db()
+    firebase_uid = request.firebase_user.get('uid')
+    cursor=conn.cursor()
+    cursor.execute(
+        '''SELECT id FROM users where firebase_uid=?''',(firebase_uid,)
+    )
+    user=cursor.fetchone()
+    if not user:
+        return jsonify({"success": False, "error": "User not found"}), 404
+    user_id=user[0]
+    cursor.execute(
+        "SELECT id FROM quizzes WHERE id = ? AND creator_id = ?",
+        (quiz_id, user_id)
+    )
+    quiz = cursor.fetchone()
+    if not quiz:
+        conn.close()
+        return jsonify({"success": False, "error": "Quiz not found"}), 404
+    cursor.execute(
+        "DELETE FROM questions WHERE quiz_id = ?",
+        (quiz_id,)
+    )
+    cursor.execute(
+        "DELETE FROM quizzes WHERE id = ? AND creator_id = ?",
+        (quiz_id, user_id)
+    )
+    conn.commit()
+    conn.close()
+    return jsonify({"success": True, "message": "Quiz deleted"})
+
+
+@app.route("/edit-quiz/<int:quiz_id>", methods=['GET'])   
+@verify_firebase_token 
+def edit_quiz(quiz_id):
+    conn=get_db()
+    firebase_uid = request.firebase_user.get('uid')
+    cursor=conn.cursor()
+    cursor.execute(
+        '''SELECT id FROM users where firebase_uid=?''',(firebase_uid,)
+    )
+    user=cursor.fetchone()
+    if not user:
+        return jsonify({"success": False, "error": "User not found"}), 404
+    user_id=user[0]
+    cursor.execute(
+        "SELECT id FROM quizzes WHERE id = ? AND creator_id = ?",
+        (quiz_id, user_id)
+    )
+    quiz = cursor.fetchone()
+    if not quiz:
+        conn.close()
+        return jsonify({"success": False, "error": "Quiz not found"}), 404
+    cursor.execute(
+        ''' SELECT id, question_text, option_a, option_b, option_c, option_d, correct_answer FROM questions WHERE quiz_id=?''', (quiz_id,)
+    )
+    rows=cursor.fetchall()
+    conn.close()
+
+    questions=[]
+    for row in rows:
+        questions.append({
+            'id': row[0],
+            "question": row[1],
+            "options": [row[2], row[3], row[4], row[5]],
+           "answer": ord(row[6])-ord('a')
+        })
+    return jsonify({
+    "success": True,
+    "questions": questions
+    })
+
+@app.route("/update-quiz/<int:quiz_id>", methods=['POST'])
+@verify_firebase_token 
+def update_quiz(quiz_id):
+    conn=get_db()
+    data=request.get_json()
+    firebase_uid = request.firebase_user.get('uid')
+    cursor=conn.cursor()
+    cursor.execute(
+        '''SELECT id FROM users where firebase_uid=?''',(firebase_uid,)
+    )
+    user=cursor.fetchone()
+    if not user:
+        conn.close()
+        return jsonify({"success": False, "error": "User not found"}), 404
+    user_id=user[0]
+    cursor.execute(
+        "SELECT id FROM quizzes WHERE id = ? AND creator_id = ?",
+        (quiz_id, user_id)
+    )
+    quiz = cursor.fetchone()
+    if not quiz:
+        conn.close()
+        return jsonify({"success": False, "error": "Quiz not found"}), 404
+    cursor.execute(
+        '''UPDATE quizzes
+        SET title=?
+        , difficulty=?
+        , is_public=?
+          WHERE id=?  ''', (data['name'], data['difficulty'], data.get('isPublic', 1), quiz_id, )
+    )
+    cursor.execute(
+        '''DELETE FROM questions WHERE quiz_id=?''', (quiz_id, )
+    )
+    for q in data['questions']:
+        correct_letter= chr(97+q['answer'])
+        cursor.execute(
+            '''INSERT INTO questions (quiz_id, question_text, option_a, option_b, option_c, option_d, correct_answer) VALUES (?,?,?,?,?,?,?)''',
+            (quiz_id, 
+             q['question'],
+            q['options'][0],
+            q['options'][1],
+            q['options'][2],
+            q['options'][3],
+            correct_letter)
+        )
+
+    conn.commit()
+    conn.close()
+    return jsonify({'success':True, 'message':"Quiz updated"})
+
+
+    
+
 
 
 
@@ -374,3 +610,10 @@ def add_cors_headers(response):
 
 if __name__ == "__main__":
     app.run(debug=True)
+
+
+
+
+
+# 123454 : username
+# 123456789 : password

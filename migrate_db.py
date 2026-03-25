@@ -40,6 +40,24 @@ def migrate_database():
         else:
             print("✅ email column already exists")
         
+        if 'created_at' not in columns:
+            print("Adding created_at column to users table...")
+            cursor.execute("ALTER TABLE users ADD COLUMN created_at TEXT")
+            cursor.execute("UPDATE users SET created_at = CURRENT_TIMESTAMP WHERE created_at IS NULL")
+        else:
+            print(" created_at column already exists")
+        if 'is_admin' not in columns:
+            print("Adding created_at column to users table...")
+            cursor.execute("ALTER TABLE users ADD COLUMN is_admin INTEGER DEFAULT 0")
+            cursor.execute("UPDATE users SET is_admin = 0")
+        else:
+            print(" is_admin column already exists")    
+        if 'is_official' not in columns:
+            print("Adding is_official column to quizzes table...")
+            cursor.execute("ALTER TABLE quizzes ADD COLUMN is_official INTEGER DEFAULT 0")
+            cursor.execute("UPDATE quizzes SET is_official = 0")
+        else:
+            print(" is_official column already exists")     
         # Commit changes to database
         conn.commit()
         print("\n✅ Database migration completed successfully!")

@@ -42,7 +42,7 @@ export function Layout(children, currentView, user, onChangeView, onLogout) {
           <div class="flex items-center gap-4">
              <div class="flex items-center gap-3 cursor-pointer" onclick="window.quizbyApp.changeView('PROFILE')">
                 <div class="text-right hidden sm:block">
-                   <p class="text-sm font-bold leading-none text-white">${user.name}</p>
+                   <p class="text-sm font-bold leading-none text-white">${user.username}</p>
                    <p class="text-[10px] text-primary font-bold uppercase tracking-wider mt-1">Lvl ${user.level}</p>
                 </div>
                 <img src="${user.avatarUrl}" alt="Profile" class="w-9 h-9 rounded-full border border-white/20 cursor-pointer" />

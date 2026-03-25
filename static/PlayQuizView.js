@@ -54,15 +54,16 @@ export function PlayQuizView(questions, config, onComplete) {
     }, 1000);
   };
 
-  const submitAnswer = (answer) => {
+  const submitAnswer = async (answer) => {
     if (timerInterval) clearInterval(timerInterval);
     
-    const isCorrect = answer === questions[currentIndex].correctAnswer;
+    //const isCorrect = answer === questions[currentIndex].correctAnswer;
     
     userAnswers.push({
-      questionIndex: currentIndex,
-      userAnswer: answer || "Time Out",
-      isCorrect
+      questionIndex: currentQuestion.id,
+      userAnswer: answer,
+      selected: answer
+
     });
 
     if (currentIndex < questions.length - 1) {
@@ -71,18 +72,27 @@ export function PlayQuizView(questions, config, onComplete) {
       window.quizbyApp.render(); // 渲染下一题
     } else {
       // 测验完成
-      const score = userAnswers.filter(a => a.isCorrect).length * 100;
-      const correctCount = userAnswers.filter(a => a.isCorrect).length;
-      const streak = calculateStreak(userAnswers);
+      // const score = userAnswers.filter(a => a.isCorrect).length * 100;
+      // const correctCount = userAnswers.filter(a => a.isCorrect).length;
+      // const streak = calculateStreak(userAnswers);
       
       // 清空引用，以便用户再次游玩时能触发重新初始化
       currentQuestionsRef = null; 
-      
+
+      const response= await fetch(`/submit-quiz/${config.quizId}`,{
+        method:'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({answers: userAnswers.map(a => ({
+          question_id: a.questionIndex,
+          selected: a.selected}))
+      })
+    })
+      const result = await response.json();
       onComplete({
-        score,
-        totalQuestions: questions.length,
-        correctAnswers: correctCount,
-        streak,
+        score: result.score,
+        totalQuestions: result.totalQuestions,
+        correctAnswers: result.correctAnswers,
+        streak: 0,
         date: new Date().toISOString(),
         topic: config.topic,
         answers: userAnswers
@@ -105,7 +115,7 @@ export function PlayQuizView(questions, config, onComplete) {
     const optionButtons = document.querySelectorAll('.option-btn');
     optionButtons.forEach((btn, idx) => {
       btn.addEventListener('click', () => {
-        selectedOption = currentQuestion.options[idx];
+        selectedOption = String.fromCharCode(97 + idx);
         
         optionButtons.forEach(b => {
           b.className = b.className.replace(/bg-primary\/20 border-primary shadow-\[0_0_20px_rgba\(238,140,43,0\.3\)\]/, 'bg-surface border-white/10 hover:border-primary/50 hover:bg-white/5');

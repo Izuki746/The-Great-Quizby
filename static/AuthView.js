@@ -54,7 +54,7 @@ export function AuthView(onLogin, onRegisterClick, onForgotPasswordClick) {
              <p class="text-gray-400 text-xs font-bold uppercase tracking-widest">University of Manchester Tech Quiz</p>
           </div>
 
-          <form id="auth-form" class="space-y-6">
+          <form id="auth-form" class="space-y-6 autocomplete="off"">
             <!-- Error Message Display -->
             <div id="login-error" class="hidden bg-red-500/10 border border-red-500/50 rounded-xl p-4 text-red-400 text-sm">
               <div class="flex items-start gap-3">

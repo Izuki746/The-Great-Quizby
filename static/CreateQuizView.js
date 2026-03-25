@@ -130,6 +130,8 @@ export function CreateQuizView(existingQuiz, onSaveQuiz, onBack) {
     if (saveBtn) {
       saveBtn.addEventListener("click", () => {
         const quizName = document.getElementById("quiz-name-input").value.trim();
+        const difficulty = document.getElementById("quiz-difficulty-input").value;
+        const isPublic = document.getElementById("quiz-public-input").checked ? 1 : 0;
         if (!quizName) {
           alert("Please enter a quiz name.");
           return;
@@ -158,13 +160,15 @@ export function CreateQuizView(existingQuiz, onSaveQuiz, onBack) {
           finalQuestions.push({
             question: qText,
             options: [optA, optB, optC, optD],
-            answer: Number(correct)
+            answer: Number(correct),
+            
           });
         });
-
         onSaveQuiz({
           name: quizName,
-          questions: finalQuestions
+          difficulty: difficulty,
+          questions: finalQuestions,
+          isPublic: isPublic
         });
       });
     }
@@ -186,7 +190,15 @@ export function CreateQuizView(existingQuiz, onSaveQuiz, onBack) {
       <input id="quiz-name-input"
         class="w-full max-w-3xl p-3 mb-4 rounded-xl bg-[#1a102b]/50 text-white"
         placeholder="Enter quiz name">
-
+      <select id="quiz-difficulty-input" class="w-full max-w-3xl p-3 mb-4 rounded-xl bg-[#1a102b]/50 text-white">
+        <option value="easy">Easy</option>
+        <option value="medium">Medium</option>
+        <option value="hard">Hard</option>
+      </select>
+      <div class="w-full max-w-3xl flex items-center gap-3 mb-4">
+        <input type="checkbox" id="quiz-public-input" checked class="w-5 h-5">
+        <label class="text-white font-bold">Make quiz public</label>
+      </div>
       <div id="question-container" class="w-full max-w-3xl space-y-6"></div>
 
       <button id="add-question-btn"

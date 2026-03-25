@@ -48,7 +48,7 @@ export function RegisterView(onRegister, onLoginClick) {
              <p class="text-gray-400 text-xs font-bold uppercase tracking-widest">Join The Great Quizby</p>
           </div>
 
-          <form id="register-form" class="space-y-6">
+          <form id="register-form" class="space-y-6 autocomplete="off">
             <!-- Success Message Display -->
             <div id="register-success" class="hidden bg-green-500/10 border border-green-500/50 rounded-xl p-4 text-green-400 text-sm">
               <div class="flex items-start gap-3">

@@ -3,7 +3,8 @@
 // ============================================
 // This file handles all Firebase Authentication operations
 // Firebase manages user authentication (login/signup) while SQLite stores user profiles
-
+// import { initializeApp as firebase_init } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+// import { getAuth } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
 // Your web app's Firebase configuration (from Firebase Console)
 const firebaseConfig = {
   apiKey: "AIzaSyAXZe1a0MselJmXOgbn-9nuZ3IG2HhsavA",
@@ -14,12 +15,15 @@ const firebaseConfig = {
   appId: "1:290451649305:web:2e6ae9baee44113feccb88",
   measurementId: "G-S3D8XZKBJG"
 };
-
+console.log("Firebase config loaded");
+console.log("projectId:", firebaseConfig.projectId);
+console.log("authDomain:", firebaseConfig.authDomain);
 // Initialize Firebase SDK with your config
 // This must be called before using any Firebase services
 // This must be called before using any Firebase services
 firebase.initializeApp(firebaseConfig);
-
+// const firebaseApp = firebase_init(firebaseConfig);
+// const auth = getAuth(firebaseApp);
 // Get reference to Firebase Authentication service
 const auth = firebase.auth();
 

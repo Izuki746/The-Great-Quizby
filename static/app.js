@@ -16,7 +16,7 @@ import { QuizPreviewView } from './QuizPreviewView.js';   // ⭐ 新增
 // FIREBASE AUTHENTICATION IMPORTS
 // ============================================
 // Import Firebase helper functions for authentication and token management
-import { firebaseAuth, storeToken, clearStoredToken } from './firebase-config.js';
+import { firebaseAuth, storeToken, clearStoredToken, getStoredToken } from './firebase-config.js';
 
 // App Views Enum
 const AppView = {
@@ -53,9 +53,11 @@ class QuizbyApp {
     this.currentConfig = null;
     this.lastResult = null;
     this.user = { ...INITIAL_USER };
+    this.myQuizzes=[];
+    this.availableQuizzes=[];
 
     this.previewQuiz = null;        // ⭐ 用于 Preview 和 Edit
-    this.editingQuizIndex = null;   // ⭐ 用于 Edit
+    this.editingQuizId = null;   // ⭐ 用于 Edit
 
     this.rootElement = document.getElementById('root');
     this.init();
@@ -63,12 +65,43 @@ class QuizbyApp {
 
   init() {
     this.render();
-    setTimeout(() => {
-      this.changeView(AppView.AUTH);
+    setTimeout(async () => {
+      const token= getStoredToken();
+      if(token){
+        const response=await fetch('/me', {
+                  method: 'GET',
+                  headers: {
+                    'Authorization': `Bearer ${token}`
+                  }
+                });
+        const data=await response.json();   
+        if (data.success){
+          this.user = { ...this.user, ...data.user } 
+          this.username=data.user.username
+          await this.fetchMyQuizzes()
+          this.changeView(AppView.DASHBOARD)
+        }
+        else{
+          clearStoredToken()
+          this.changeView(AppView.AUTH)
+        }
+      
+      }
+      else{
+        this.changeView(AppView.AUTH)
+      }
     }, 3500);
   }
 
-  changeView(view) {
+  async changeView(view) {
+    if (view === AppView.CREATE_QUIZ && this.currentView !== AppView.PROFILE) {
+    this.previewQuiz = null;
+    this.editingQuizId = null;
+  }
+    if(view==AppView.QUICK_MATCH || view==AppView.PROFILE){
+      await this.fetchMyQuizzes()
+      console.log("myQuizzes:", this.myQuizzes);
+    }
     this.currentView = view;
     this.render();
   }
@@ -337,6 +370,23 @@ class QuizbyApp {
       this.showError('reset-error', errorMessage);
     }
   }
+  async fetchAvailableQuizzes(){
+    const token=getStoredToken()
+    const response=await fetch("/quizzes", {
+      method:'GET',
+      headers:{
+        'Content-Type':'application/json',
+        'Authorization': `Bearer ${token}`
+      }
+    })
+    const data=await response.json();
+    if (data.success){
+      this.availableQuizzes=data.quizzes;
+    } else{
+      this.availableQuizzes=[];
+    }
+
+  }
 
   handleQuestionsGenerated(generatedQuestions, config) {
     this.questions = generatedQuestions;
@@ -344,26 +394,52 @@ class QuizbyApp {
     this.changeView(AppView.PLAY_QUIZ);
   }
 
-  handleManualQuizSave(quiz) {
-    if (!this.user.quizzes) this.user.quizzes = [];
+  async handleManualQuizSave(quiz) {
+    const token=getStoredToken();
+    const response = await fetch ('/create-quiz',{
+      method:'POST',
+      headers:{
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify(quiz)
+    })
+    const data = await response.json();
 
-    this.user.quizzes.push({
-      name: quiz.name,
-      createdAt: new Date().toISOString(),
-      questions: quiz.questions
-    });
-
-    this.user.totalQuizzes = this.user.quizzes.length;
+    if (data.success) {
+    await this.fetchMyQuizzes();  
+    this.user.totalQuizzes = this.myQuizzes.length;
 
     alert("Your quiz has been saved!");
     this.changeView(AppView.DASHBOARD);
+  } else{
+    alert("Failed to save quiz: " + data.error);
+  }
   }
 
-  handleQuizComplete(result) {
+ async fetchMyQuizzes() {
+  const token = await firebaseAuth.getIdToken();
+  console.log("token:", token);
+
+  const response = await fetch('/my-quizzes', {
+    method: 'GET',
+    headers: {
+      'Authorization': `Bearer ${token}`
+    }
+  });
+
+  const result = await response.json();
+  console.log("result:", result);
+  this.myQuizzes = Array.isArray(result) ? result : [];
+}
+
+  async handleQuizComplete(result) {
+    console.log("currentConfig:", this.currentConfig);
+    console.log("result:", result);
     this.lastResult = result;
     this.user.totalQuizzes += 1;
-    this.user.points += result.score;
-    this.user.streak = Math.max(this.user.streak, result.streak);
+    //this.user.points += result.score;
+    //this.user.streak = Math.max(this.user.streak, result.streak);
     this.user.level = Math.floor(this.user.points / 500) + 1;
     this.changeView(AppView.RESULTS);
   }
@@ -379,6 +455,115 @@ class QuizbyApp {
     clearStoredToken();
     // Redirect to login screen
     this.changeView(AppView.AUTH);
+  }
+
+  async handlePlayUserquiz(quizId){
+    const response = await fetch(`/quiz/${quizId}`);
+    const data= await response.json();
+    if (data.success) {
+      this.questions = data.questions
+      console.log("QUESTIONS:", this.questions);
+      if (!this.questions || this.questions.length === 0) {
+        alert("No questions found");
+        return;
+    }
+    this.previewQuiz = null;
+    this.editingQuizId = null;
+    this.currentConfig={quizId: quizId}  
+    this.changeView(AppView.PLAY_QUIZ)
+    }
+  }
+
+  async handlePreviewQuiz(quizId){
+    const response =  await fetch(`/quiz/${quizId}`);
+    const data =await response.json();
+    
+    if (!data.success) {
+      alert("Failed to load quiz preview");
+      return;
+    }
+    const quizSummary = this.myQuizzes.find(q => q.id === quizId);
+    if (!quizSummary) {
+      alert("Failed to load quiz preview");
+      return;
+    }
+
+    if (!data.questions || data.questions.length === 0) {
+      alert("No questions found");
+      return;
+    }
+      this.previewQuiz={
+      id:quizId,
+      name:quizSummary.title,
+      difficulty:quizSummary.difficulty,
+      questions:data.questions
+    }
+    
+      //this.currentConfig={quizId:quizId}
+      this.changeView(AppView.PREVIEW_QUIZ)
+    
+  }
+
+  async handleEditQuiz(quizId){
+    const token = getStoredToken();
+    const response =  await fetch(`/edit-quiz/${quizId}`,{
+    method: 'GET',
+    headers: {
+      'Authorization': `Bearer ${token}`
+    }
+  });
+    const data =await response.json();
+
+    if (!data.success) {
+      alert("Failed to load quiz ");
+      return;
+    }
+    const quizSummary = this.myQuizzes.find(q => q.id === quizId);
+    
+    if (!quizSummary) {
+      alert("Failed to load quiz ");
+      return;
+    }
+
+    if (!data.questions || data.questions.length === 0) {
+      alert("No questions found");
+      return;
+    }
+    this.editingQuizId=quizId
+    this.previewQuiz={
+      id:quizId,
+      name:quizSummary.title,
+      difficulty:quizSummary.difficulty,
+      questions:data.questions
+    }
+
+    this.changeView(AppView.CREATE_QUIZ)
+
+  }
+
+
+  async handleUpdateQuiz(quizId, quiz){
+    const token = getStoredToken();
+    const response =  await fetch(`/update-quiz/${quizId}`,{
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    },
+    body: JSON.stringify(quiz)
+  });
+    const data =await response.json();
+
+    if (!data.success) {
+      alert("Failed to update quiz: " + (data.error || "Unknown error"));
+      return;
+    }
+
+    this.editingQuizId = null;
+    this.previewQuiz = null;
+    alert("Quiz updated!");
+    this.changeView(AppView.PROFILE);
+
   }
 
   render() {
@@ -420,35 +605,33 @@ class QuizbyApp {
 
       // 👇 加上这一段 QUICK_MATCH 的页面路由逻辑 👇
       case AppView.QUICK_MATCH:
+        
         viewContent = QuickMatchView(
+          this.myQuizzes,
           (q, c) => this.handleQuestionsGenerated(q, c),
+          (quizId, quizTitle) => this.handlePlayUserquiz(quizId, quizTitle),
           () => this.changeView(AppView.DASHBOARD) // 点击 Back 时返回主页
         );
         break;
       // 👆 ========================================= 👆
 
-      case AppView.CREATE_QUIZ:
-        viewContent = CreateQuizView(
-          this.previewQuiz,   // ⭐ 如果是编辑模式，这里有 quiz 数据
-          (quiz) => {
-            if (this.editingQuizIndex !== null) {
-              // ⭐ 编辑模式：覆盖原 quiz
-              this.user.quizzes[this.editingQuizIndex] = {
-                ...quiz,
-                createdAt: this.user.quizzes[this.editingQuizIndex].createdAt
-              };
-              this.editingQuizIndex = null;
+        case AppView.CREATE_QUIZ:
+          viewContent = CreateQuizView(
+            this.previewQuiz,
+            (quiz) => {
+              if (this.editingQuizId !== null) {
+                this.handleUpdateQuiz(this.editingQuizId, quiz);
+              } else {
+                this.handleManualQuizSave(quiz);
+              }
+            },
+            () => {
               this.previewQuiz = null;
-              alert("Quiz updated!");
-              this.changeView(AppView.PROFILE);
-            } else {
-              // ⭐ 创建模式
-              this.handleManualQuizSave(quiz);
+              this.editingQuizId = null;
+              this.changeView(AppView.DASHBOARD);
             }
-          },
-          () => this.changeView(AppView.DASHBOARD)
-        );
-        break;
+          );
+      break;
 
       case AppView.PLAY_QUIZ:
         viewContent = PlayQuizView(
@@ -463,7 +646,7 @@ class QuizbyApp {
         break;
 
       case AppView.PROFILE:
-        viewContent = ProfileView(this.user);
+        viewContent = ProfileView(this.user, this.myQuizzes);
         break;
 
       case AppView.PREVIEW_QUIZ:
@@ -494,37 +677,54 @@ class QuizbyApp {
 
   attachEventListeners() {
 
+
     // ⭐ Profile → Preview
     if (this.currentView === AppView.PROFILE) {
-      document.querySelectorAll("[data-quiz-index]").forEach(btn => {
+      document.querySelectorAll("[data-quiz-id]").forEach(btn => {
         btn.addEventListener("click", () => {
-          const index = btn.getAttribute("data-quiz-index");
-          this.previewQuiz = this.user.quizzes[index];
-          this.changeView(AppView.PREVIEW_QUIZ);
+          const quizId = Number(btn.getAttribute("data-quiz-id"));
+          this.handlePreviewQuiz(quizId)
+
+          // if (!this.previewQuiz){
+          //   alert("Quiz not found!!!")
+          // }
+          // this.changeView(AppView.PREVIEW_QUIZ);
         });
       });
 
+      // Profile -> Play
+      document.querySelectorAll("[data-play-id]").forEach( btn =>{
+        btn.addEventListener("click", ()=>{
+          const quizId=btn.getAttribute("data-play-id");
+          this.handlePlayUserquiz(quizId)
+        })
+      })
+
       // ⭐ Profile → Edit
-      document.querySelectorAll("[data-edit-index]").forEach(btn => {
+      document.querySelectorAll("[data-edit-id]").forEach(btn => {
         btn.addEventListener("click", () => {
-          const index = btn.getAttribute("data-edit-index");
-          this.editingQuizIndex = index;
-          this.previewQuiz = this.user.quizzes[index];
-          this.changeView(AppView.CREATE_QUIZ);
+          const quizId = Number(btn.getAttribute("data-edit-id"));
+          //this.editingQuizId=null;
+          this.handleEditQuiz(quizId)
         });
       });
 
       // ⭐ Profile → Delete
-      document.querySelectorAll("[data-delete-index]").forEach(btn => {
-        btn.addEventListener("click", () => {
-          const index = btn.getAttribute("data-delete-index");
+      document.querySelectorAll("[data-delete-id]").forEach(btn => {
+        btn.addEventListener("click", async () => {
+          const index = btn.getAttribute("data-delete-id");
 
           const confirmDelete = confirm("Are you sure you want to delete this quiz?");
           if (!confirmDelete) return;
-
-          this.user.quizzes.splice(index, 1);
-          this.user.totalQuizzes = this.user.quizzes.length;
-
+          const token = getStoredToken();
+          await fetch(`/delete-quiz/${index}`, {
+            
+            method: "POST", // or DELETE later if you want
+            headers: {
+              "Authorization": `Bearer ${token}`
+             }
+            });
+          await this.fetchMyQuizzes();
           this.changeView(AppView.PROFILE);
         });
       });

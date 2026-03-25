@@ -5,7 +5,7 @@ import { generateQuizQuestions } from './quizService.js';
 // 将弹窗状态设为全局变量，避免重新渲染时丢失
 let activeModalCategory = null;
 
-export function QuickMatchView(onQuestionsGenerated, onBack) {
+export function QuickMatchView(myQuizzes, onQuestionsGenerated, onPlayUserQuiz, onBack) {
   let isLoading = false;
   let loadingText = 'Initializing...';
 
@@ -52,6 +52,19 @@ export function QuickMatchView(onQuestionsGenerated, onBack) {
     ]
   };
 
+  const myQuizCards = Array.isArray(myQuizzes)
+  ? myQuizzes.map(quiz => `
+      <div class="glass-card rounded-xl p-4">
+        <h3 class="text-white font-bold">${quiz.title}</h3>
+        <p class="text-slate-400 text-sm">${quiz.difficulty}</p>
+        <!-- Play -->   
+                  <button class="text-green-400 hover:text-green-600" data-play-id="${quiz.id}" data-play-title="${quiz.title}">
+                     <span class="material-symbols-outlined text-3xl">play_arrow</span>
+                  </button>
+      </div>
+    `).join('')
+  : '';
+
   const handleSelect = async (topic) => {
     isLoading = true;
     loadingText = 'Connecting to neural network...';
@@ -86,6 +99,14 @@ export function QuickMatchView(onQuestionsGenerated, onBack) {
   };
 
   setTimeout(() => {
+    document.querySelectorAll("[data-play-id]").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const quizId = btn.getAttribute("data-play-id");
+        const quizTitle = btn.getAttribute("data-play-title");
+        onPlayUserQuiz(quizId, quizTitle);
+      
+      });
+    });
     const backBtn = document.getElementById('quick-back-btn');
     if (backBtn) {
       backBtn.addEventListener('click', onBack);
@@ -213,7 +234,7 @@ export function QuickMatchView(onQuestionsGenerated, onBack) {
          <div>
              <div class="flex items-center justify-between mb-6">
                 <div>
-                  <h1 class="text-3xl font-bold text-white font-display">Trending Categories</h1>
+                  <h1 class="text-3xl font-bold text-white font-display">Available Quizzes</h1>
                   <p class="text-slate-400 mt-1">Select a topic to start matching</p>
                 </div>
                 ${Button({
@@ -240,6 +261,17 @@ export function QuickMatchView(onQuestionsGenerated, onBack) {
                 `).join('')}
              </div>
          </div>
+
+        <div class="pt-8 border-t border-white/10">
+          <h2 class="text-2xl font-bold text-white mb-4">
+            My Quizzes
+          </h2>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            ${myQuizCards}
+            
+          </div>
+        </div>
 
          <!-- 底部：名人堂排行榜模块 -->
          <div class="pt-8 border-t border-white/10">
