@@ -30,6 +30,12 @@ export function Layout(children, currentView, user, onChangeView, onLogout) {
               Dashboard
             </button>
             <button 
+              onclick="window.quizbyApp.changeView('LEADERBOARD')" 
+              class="hover:text-primary transition-colors ${currentView === 'LEADERBOARD' ? 'text-primary' : 'text-slate-400'}"
+            >
+              Leaderboard
+            </button>
+            <button 
               onclick="window.quizbyApp.changeView('PROFILE')" 
               class="hover:text-primary transition-colors ${currentView === 'PROFILE' ? 'text-primary' : 'text-slate-400'}"
             >

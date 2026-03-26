@@ -316,7 +316,7 @@ def get_quizzes():
     cursor=conn.cursor()
 
     cursor.execute(
-        '''SELECT id, title, description, difficulty FROM quizzes WHERE is_public=1 AND is_official=1''')
+        '''SELECT id, title, description, difficulty, is_official FROM quizzes WHERE is_public=1''')
     rows = cursor.fetchall()
     conn.close()
 
@@ -326,7 +326,8 @@ def get_quizzes():
             "id": row[0],
             "title": row[1],
             "description": row[2],
-            "difficulty": row[3]
+            "difficulty": row[3],
+            "is_official": row[4]
         })
 
     return jsonify({
@@ -361,7 +362,7 @@ def get_quiz(quiz_id):
     creator_id=quiz[1]
     is_public=quiz[2]
     can_view = (
-    (is_public == 1 and is_official == 1) or
+    (is_public == 1) or
     (creator_id == user_id) or
     (is_admin == 1)
     )
@@ -388,22 +389,34 @@ def get_quiz(quiz_id):
     })
 
 @app.route("/submit-quiz/<int:quiz_id>", methods=["POST"])
+@verify_firebase_token
 def submit_quiz(quiz_id):
+    firebase_uid=request.firebase_user.get('uid')
     data=request.get_json()
     conn=get_db()
     cursor=conn.cursor()
-
+    cursor.execute(
+            '''SELECT id, is_admin FROM users WHERE firebase_uid=?''',(firebase_uid, )
+        )
+    user=cursor.fetchone()
+    if not user:
+        conn.close()
+        return jsonify({"success": False, "error": "User not found"}), 404
+    user_id=user[0]
+    is_admin=user[1]
     cursor.execute(
         '''SELECT id, correct_answer from questions where quiz_id=?''',
         (quiz_id, )
     )
+    
     rows=cursor.fetchall()
-    conn.close()
+    
     correct_answers={}
     for row in rows:
         question_id=row[0]
         correct_answer=row[1]
         correct_answers[question_id]=correct_answer
+    time_taken=data.get('time_taken', 0)    
     answers=data.get("answers", []) 
     correct_count=0
     for answer in answers:
@@ -411,7 +424,15 @@ def submit_quiz(quiz_id):
         selected = answer.get("selected")  
         if selected==correct_answers.get(question_id):
             correct_count+=1
-    score=correct_count*100
+    base_score = correct_count * 100
+    max_time = len(correct_answers) * 2000
+    speed_bonus = max(0, max_time - time_taken*30)
+    score = base_score + speed_bonus
+    cursor.execute(
+        '''INSERT INTO  attempts (user_id, quiz_id, score, time_taken) VALUES (?, ?, ?, ?)''', (user_id, quiz_id, score, time_taken)
+    )
+    conn.commit()
+    conn.close()
     return jsonify({
         "score": score,
         "success": True,
@@ -620,7 +641,35 @@ def update_quiz(quiz_id):
     return jsonify({'success':True, 'message':"Quiz updated"})
 
 
-    
+@app.route('/leaderboard/<int:quiz_id>', methods=['GET'])
+def leaderboard_update(quiz_id):
+    conn=get_db()
+    cursor=conn.cursor()
+    cursor.execute(
+        '''
+        SELECT users.username, attempts.score, attempts.time_taken, attempts.completed_at
+        FROM attempts
+        JOIN users ON attempts.user_id = users.id
+        WHERE attempts.quiz_id = ?
+        ORDER BY attempts.score DESC, attempts.time_taken ASC, attempts.completed_at ASC
+        LIMIT 10
+        ''',
+        (quiz_id,)
+    )
+    rows=cursor.fetchall()
+    conn.close()
+    entries=[]
+    for row in rows:
+        entries.append({
+            "username":row[0],
+            "score":row[1],
+            "time_taken": row[2],
+            "completed_at": row[3]
+        })
+    return jsonify({
+        "success":True,
+        "entries": entries
+    })
 
 
 

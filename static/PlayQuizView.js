@@ -1,5 +1,6 @@
 // static/PlayQuizView.js
 import { Button } from './Button.js';
+import { getStoredToken } from './firebase-config.js';
 
 // 将状态变量移出函数内部，防止每次重新渲染时产生多个相互冲突的定时器
 let currentIndex = 0;
@@ -8,14 +9,18 @@ let userAnswers = [];
 let timeLeft = 30;
 let timerInterval = null;
 let currentQuestionsRef = null; // 用于检测是否是全新的测验
+let startTime = Date.now();
 
 export function PlayQuizView(questions, config, onComplete) {
   // 如果进入了新的一轮测验，重置所有的状态变量
   if (currentQuestionsRef !== questions) {
     currentQuestionsRef = questions;
     currentIndex = 0;
+    selectedOption = null;
     userAnswers = [];
-    if (timerInterval) clearInterval(timerInterval); 
+    timeLeft = 30;
+    startTime = Date.now();
+    if (timerInterval) clearInterval(timerInterval);
   }
 
   const currentQuestion = questions[currentIndex];
@@ -79,22 +84,33 @@ export function PlayQuizView(questions, config, onComplete) {
       // 清空引用，以便用户再次游玩时能触发重新初始化
       currentQuestionsRef = null; 
 
+      const timeTaken = Math.floor((Date.now() - startTime) / 1000);
+      const token=getStoredToken()
       const response= await fetch(`/submit-quiz/${config.quizId}`,{
         method:'POST',
-        headers: {'Content-Type':'application/json'},
+        headers: {'Content-Type':'application/json',
+          'Authorization': `Bearer ${token}`
+        },
         body: JSON.stringify({answers: userAnswers.map(a => ({
           question_id: a.questionIndex,
-          selected: a.selected}))
+          selected: a.selected,
+          })),
+          time_taken: timeTaken
       })
     })
       const result = await response.json();
+      if (!result.success) {
+        alert(result.error || "Failed to submit quiz");
+        return;
+      }
+      
       onComplete({
         score: result.score,
         totalQuestions: result.totalQuestions,
         correctAnswers: result.correctAnswers,
         streak: 0,
         date: new Date().toISOString(),
-        topic: config.topic,
+        topic: config.title,
         answers: userAnswers
       });
     }

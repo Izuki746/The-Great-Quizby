@@ -1,5 +1,5 @@
 // static/ProfileView.js
-export function ProfileView(user) {
+export function ProfileView(user, myQuizzes) {
   // Dynamic generate HTML of history record
   const historyHtml = user.quizHistory && user.quizHistory.length > 0 
     ? user.quizHistory.slice().reverse().map(result => {
@@ -44,10 +44,10 @@ export function ProfileView(user) {
           <div class="relative z-10 flex flex-col items-center py-12 px-4">
              <div class="relative group mb-6">
                 <div class="absolute -inset-1 bg-gradient-to-r from-primary to-secondary rounded-full blur opacity-75 group-hover:opacity-100 transition duration-500"></div>
-                <img src="${user.avatarUrl}" alt="${user.name}" class="relative w-32 h-32 rounded-full border-4 border-background-dark object-cover" />
+                <img src="${user.avatarUrl}" alt="${user.username}" class="relative w-32 h-32 rounded-full border-4 border-background-dark object-cover" />
              </div>
              
-             <h1 class="text-3xl font-bold text-white mb-2 font-display">${user.name}</h1>
+             <h1 class="text-3xl font-bold text-white mb-2 font-display">${user.username}</h1>
              <div class="flex items-center gap-2 text-primary font-bold text-lg mb-1">
                 <span class="material-symbols-outlined">military_tech</span>
                 <span>Level ${user.level} ${user.title}</span>
@@ -59,7 +59,7 @@ export function ProfileView(user) {
                       <span class="material-symbols-outlined text-6xl">quiz</span>
                    </div>
                    <p class="text-slate-400 text-xs font-bold uppercase tracking-wider">Total Quizzes Made</p>
-                   <p class="text-3xl font-bold text-white mt-1 font-display">${user.totalQuizzes}</p>
+                   <p class="text-3xl font-bold text-white mt-1 font-display">${myQuizzes.length}</p>
                 </div>
 
                 <div class="glass-card rounded-xl p-6 relative overflow-hidden group text-center w-full max-w-sm">
@@ -73,7 +73,9 @@ export function ProfileView(user) {
           </div>
        </div>
 
-       <div class="max-w-[960px] mx-auto py-8 px-4">
+        <div class="max-w-[960px] mx-auto py-8 px-4">
+
+          <!-- My Quizzes Section -->
           <h2 class="text-2xl font-bold text-white mb-6 flex items-center gap-3">
              <span class="material-symbols-outlined text-primary">folder_special</span>
              My Quizzes
@@ -81,26 +83,38 @@ export function ProfileView(user) {
 
           <div class="space-y-4">
             ${
-              user.quizzes && user.quizzes.length > 0
-                ? user.quizzes
+              myQuizzes && myQuizzes.length > 0
+                ? myQuizzes
                     .map(
                       (q, i) => `
               <div class="glass-card rounded-xl p-5 flex justify-between items-center">
                 <div>
-                  <p class="text-white font-bold text-lg">${q.name}</p>
-                  <p class="text-slate-400 text-sm">${q.questions.length} Questions</p>
-                  <p class="text-slate-500 text-xs mt-1">${new Date(q.createdAt).toLocaleDateString()}</p>
+                  <p class="text-white font-bold text-lg">${q.title}</p>
+                  <p class="text-slate-400 text-sm">Difficulty: ${q.difficulty}</p>
+                  <p class="text-slate-500 text-xs mt-1">Quiz ID: ${q.id}</p>
                 </div>
+
                 <div class="flex items-center gap-4">
-                  <button class="text-primary hover:text-white" data-quiz-index="${i}">
+                  <!-- Play -->   
+                  <button class="text-green-400 hover:text-green-600" data-play-id="${q.id}" data-play-title="${q.title}">
+                     <span class="material-symbols-outlined text-3xl">play_arrow</span>
+                  </button>
+
+                  <!-- Preview -->
+                  <button class="text-primary hover:text-white" data-quiz-id="${q.id}">
                     <span class="material-symbols-outlined text-3xl">visibility</span>
                   </button>
-                  <button class="text-yellow-400 hover:text-yellow-600" data-edit-index="${i}">
+
+                  <!-- Edit -->
+                  <button class="text-yellow-400 hover:text-yellow-600" data-edit-id="${q.id}">
                     <span class="material-symbols-outlined text-3xl">edit</span>
                   </button>
-                  <button class="text-red-400 hover:text-red-600" data-delete-index="${i}">
+
+                  <!-- Delete -->
+                  <button class="text-red-400 hover:text-red-600" data-delete-id="${q.id}">
                     <span class="material-symbols-outlined text-3xl">delete</span>
                   </button>
+
                 </div>
               </div>
             `

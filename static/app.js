@@ -12,6 +12,8 @@ import { ProfileView } from './ProfileView.js';
 import { Layout } from './Layout.js';
 import { HomeView } from './homeView.js';
 import { QuizPreviewView } from './QuizPreviewView.js';   // New added
+import { LeaderboardView } from './LeaderboardView.js';
+import { LeaderboardDetailView } from './LeaderboardDetailView.js'; 
 // ============================================
 // FIREBASE AUTHENTICATION IMPORTS
 // ============================================
@@ -31,6 +33,8 @@ const AppView = {
   RESULTS: 'RESULTS',
   PROFILE: 'PROFILE',
   PREVIEW_QUIZ: 'PREVIEW_QUIZ',   // New added
+  LEADERBOARD:'LEADERBOARD',
+  LEADERBOARD_DETAIL:'LEADERBOARD_DETAIL'
 };
 
 // Initial User Profile
@@ -56,9 +60,11 @@ class QuizbyApp {
     this.user = { ...INITIAL_USER };
     this.myQuizzes=[];
     this.availableQuizzes=[];
-
     this.previewQuiz = null;        // For Preview and Edit
     this.editingQuizId = null;   // For Edit
+    this.leaderboardEntries = [];
+    this.currentLeaderboardQuizId = null;
+    this.currentLeaderboardQuizTitle = '';
 
     this.rootElement = document.getElementById('root');
     this.init();
@@ -96,7 +102,7 @@ class QuizbyApp {
   }
 
   async changeView(view) {
-    if (view === AppView.CREATE_QUIZ && this.currentView !== AppView.PROFILE) {
+    if (view === AppView.CREATE_QUIZ && this.currentView !== AppView.PROFILE || view === AppView.LEADERBOARD) {
     this.previewQuiz = null;
     this.editingQuizId = null;
   }
@@ -391,11 +397,34 @@ class QuizbyApp {
 
   }
 
-  handleQuestionsGenerated(generatedQuestions, config) {
-    this.questions = generatedQuestions;
-    this.currentConfig = config;
-    this.changeView(AppView.PLAY_QUIZ);
+  async fetchLeaderboard(quizId) {
+    try {
+      const response = await fetch(`/leaderboard/${quizId}`);
+      const data = await response.json();
+
+      if (data.success) {
+        this.leaderboardEntries = Array.isArray(data.entries) ? data.entries : [];
+      } else {
+        this.leaderboardEntries = [];
+      }
+    } catch (err) {
+      console.error("Failed to fetch leaderboard:", err);
+      this.leaderboardEntries = [];
+    }
   }
+
+  async handleOpenLeaderboard(quizId, quizTitle) {
+  this.currentLeaderboardQuizId = quizId;
+  this.currentLeaderboardQuizTitle = quizTitle || 'Quiz Leaderboard';
+  await this.fetchLeaderboard(quizId);
+  this.changeView(AppView.LEADERBOARD_DETAIL);
+}
+
+  // handleQuestionsGenerated(generatedQuestions, config) {
+  //   this.questions = generatedQuestions;
+  //   this.currentConfig = config;
+  //   this.changeView(AppView.PLAY_QUIZ);
+  // }
 
   async handleManualQuizSave(quiz) {
     const token=getStoredToken();
@@ -634,6 +663,17 @@ class QuizbyApp {
         );
         break;
 
+      case AppView.LEADERBOARD:
+        viewContent = LeaderboardView(this.availableQuizzes);
+        break;
+
+      case AppView.LEADERBOARD_DETAIL:
+        viewContent = LeaderboardDetailView(
+          this.currentLeaderboardQuizTitle,
+          this.leaderboardEntries
+        );
+        break;  
+
       // 👇 加上这一段 QUICK_MATCH 的页面路由逻辑 👇
       case AppView.QUICK_MATCH:
         
@@ -718,7 +758,56 @@ class QuizbyApp {
 
   attachEventListeners() {
 
+  if (this.currentView === AppView.LEADERBOARD) {
+      document.querySelectorAll("[data-play-public-quiz]").forEach(btn => {
+        btn.addEventListener("click", () => {
+          const quizId = Number(btn.getAttribute("data-play-public-quiz"));
+          const quizTitle = btn.getAttribute("data-play-title");
+          this.handlePlayUserquiz(quizId, quizTitle);
+        });
+      });
 
+      document.querySelectorAll("[data-open-quiz-leaderboard]").forEach(btn => {
+        btn.addEventListener("click", () => {
+          const quizId = Number(btn.getAttribute("data-open-quiz-leaderboard"));
+          const quizTitle = btn.getAttribute("data-quiz-title");
+          this.handleOpenLeaderboard(quizId, quizTitle);
+        });
+      });
+    }
+
+    if (this.currentView === AppView.LEADERBOARD_DETAIL) {
+        const backBtn = document.getElementById("leaderboard-detail-back-btn");
+        if (backBtn) {
+          backBtn.addEventListener("click", () => this.changeView(AppView.LEADERBOARD));
+        }
+
+        const playBtn = document.getElementById("leaderboard-detail-play-btn");
+        if (playBtn) {
+          playBtn.addEventListener("click", () => {
+            if (this.currentLeaderboardQuizId) {
+              this.handlePlayUserquiz(
+                this.currentLeaderboardQuizId,
+                this.currentLeaderboardQuizTitle
+              );
+            }
+          });
+        }
+      }
+    if (this.currentView === AppView.QUICK_MATCH) {
+      const backBtn = document.getElementById("quick-back-btn");
+      if (backBtn) {
+        backBtn.addEventListener("click", () => this.changeView(AppView.DASHBOARD));
+      }
+
+      document.querySelectorAll("[data-play-id]").forEach(btn => {
+        btn.addEventListener("click", () => {
+          const quizId = Number(btn.getAttribute("data-play-id"));
+          const quizTitle = btn.getAttribute("data-play-title");
+          this.handlePlayUserquiz(quizId, quizTitle);
+        });
+      });
+    }  
     // ⭐ Profile → Preview
     if (this.currentView === AppView.PROFILE) {
       document.querySelectorAll("[data-quiz-id]").forEach(btn => {

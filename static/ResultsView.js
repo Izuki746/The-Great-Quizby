@@ -2,8 +2,11 @@
 import { Button } from './Button.js';
 
 export function ResultsView(result, onViewChange, onPLayAgain) {
-  const accuracy = Math.round((result.correctAnswers / result.totalQuestions) * 100);
-
+  const correctAnswers = result?.correctAnswers ?? 0;
+  const totalQuestions = result?.totalQuestions ?? 0;
+  const accuracy = totalQuestions > 0
+    ? Math.round((correctAnswers / totalQuestions) * 100)
+    : 0;
   setTimeout(() => {
     const dashboardBtn = document.getElementById('exit-home-btn');
     const playAgainBtn = document.getElementById('play-again-btn');
