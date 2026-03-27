@@ -63,11 +63,16 @@ export function PlayQuizView(questions, config, onComplete) {
     if (timerInterval) clearInterval(timerInterval);
     
     //const isCorrect = answer === questions[currentIndex].correctAnswer;
-    
+    const correctLetter = currentQuestion.correctAnswer;
+    const correctIndex = correctLetter ? correctLetter.charCodeAt(0) - 97 : -1;
+    const correctAnswerText = correctIndex >= 0 ? currentQuestion.options[correctIndex] : null;
     userAnswers.push({
-      questionIndex: currentQuestion.id,
-      userAnswer: answer,
-      selected: answer
+      questionId: currentQuestion.id,
+      question: currentQuestion.question,
+      options: currentQuestion.options,
+      selected: answer,
+      correctAnswer: correctAnswerText,
+      isCorrect: answer === correctLetter
 
     });
 
@@ -92,7 +97,7 @@ export function PlayQuizView(questions, config, onComplete) {
           'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({answers: userAnswers.map(a => ({
-          question_id: a.questionIndex,
+          question_id: a.questionId,
           selected: a.selected,
           })),
           time_taken: timeTaken
@@ -111,7 +116,15 @@ export function PlayQuizView(questions, config, onComplete) {
         streak: 0,
         date: new Date().toISOString(),
         topic: config.title,
-        answers: userAnswers
+        answers: userAnswers.map((ans)=>{
+          const match = result.breakdown.find(b => b.question_id === ans.questionId);
+          return {
+            question: ans.question,
+            selected: ans.selected,
+            correctAnswer: match?.correctAnswer ?? null,
+            isCorrect: match?.isCorrect ?? false
+          };
+        })
       });
     }
   };

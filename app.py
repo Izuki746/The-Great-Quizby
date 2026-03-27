@@ -419,14 +419,25 @@ def submit_quiz(quiz_id):
     time_taken=data.get('time_taken', 0)    
     answers=data.get("answers", []) 
     correct_count=0
+
+    breakdown=[]
+
     for answer in answers:
         question_id = answer.get("question_id")
-        selected = answer.get("selected")  
+        selected = (answer.get("selected") or "").lower() 
+        correct = correct_answers.get(question_id)
+        breakdown.append({
+            "question_id": question_id,
+            "selected": selected,
+            "correctAnswer": correct,
+            "isCorrect": selected == correct
+        }) 
         if selected==correct_answers.get(question_id):
             correct_count+=1
+          
     base_score = correct_count * 100
     max_time = len(correct_answers) * 2000
-    speed_bonus = max(0, max_time - time_taken*30)
+    speed_bonus = max(0, max_time - time_taken*300)
     score = base_score + speed_bonus
     cursor.execute(
         '''INSERT INTO  attempts (user_id, quiz_id, score, time_taken) VALUES (?, ?, ?, ?)''', (user_id, quiz_id, score, time_taken)
@@ -437,7 +448,8 @@ def submit_quiz(quiz_id):
         "score": score,
         "success": True,
         "totalQuestions":len(correct_answers),
-        "correctAnswers": correct_count 
+        "correctAnswers": correct_count,
+        "breakdown":breakdown
     })    
 @app.route("/create-quiz", methods=["POST"])   
 @verify_firebase_token 

@@ -2,11 +2,17 @@
 import { Button } from './Button.js';
 
 export function ResultsView(result, onViewChange, onPLayAgain) {
+  const score = result?.score ?? 0;
+  const topic = result?.topic ?? "this";
+  const streak = result?.streak ?? 0;
+  const answers = result?.answers ?? [];
   const correctAnswers = result?.correctAnswers ?? 0;
   const totalQuestions = result?.totalQuestions ?? 0;
+
   const accuracy = totalQuestions > 0
     ? Math.round((correctAnswers / totalQuestions) * 100)
     : 0;
+
   setTimeout(() => {
     const dashboardBtn = document.getElementById('exit-home-btn');
     const playAgainBtn = document.getElementById('play-again-btn');
@@ -21,7 +27,6 @@ export function ResultsView(result, onViewChange, onPLayAgain) {
 
   return `
     <div class="flex-1 w-full max-w-5xl mx-auto p-4 md:p-8 flex flex-col gap-8">
-      <!-- Hero Card -->
       <div class="flex flex-col md:flex-row gap-8 items-center justify-between glass-card rounded-2xl p-8 relative overflow-hidden shadow-2xl">
          <div class="absolute -top-24 -right-24 w-64 h-64 bg-primary/20 rounded-full blur-3xl"></div>
          
@@ -34,24 +39,19 @@ export function ResultsView(result, onViewChange, onPLayAgain) {
                Mission <span class="text-transparent bg-clip-text bg-gradient-to-r from-primary to-secondary">Accomplished!</span>
             </h2>
             <p class="text-gray-400 text-lg">
-               Great job on the "${result.topic}" quiz.
+               Great job on the "${topic}" quiz.
             </p>
             <div class="flex gap-4 mt-2">
                <div class="px-5 py-3 rounded-lg bg-white/5 border border-white/10 flex flex-col">
                   <span class="text-[10px] text-gray-400 uppercase font-bold">Total Points</span>
-                  <span class="text-2xl font-bold text-white font-display">${result.score}</span>
+                  <span class="text-2xl font-bold text-white font-display">${score}</span>
                </div>
-               <div class="px-5 py-3 rounded-lg bg-white/5 border border-white/10 flex flex-col">
-                  <span class="text-[10px] text-gray-400 uppercase font-bold">Streak</span>
-                  <span class="text-2xl font-bold text-white font-display">${result.streak} Days 🔥</span>
-               </div>
+               
             </div>
          </div>
 
-         <!-- Chart -->
          <div class="z-10 relative w-48 h-48 md:w-56 md:h-56 shrink-0 flex items-center justify-center">
              <svg class="transform -rotate-90" width="100%" height="100%" viewBox="0 0 200 200">
-                <!-- Background circle -->
                 <circle
                   cx="100"
                   cy="100"
@@ -60,7 +60,6 @@ export function ResultsView(result, onViewChange, onPLayAgain) {
                   stroke="#333"
                   stroke-width="30"
                 />
-                <!-- Progress circle -->
                 <circle
                   cx="100"
                   cy="100"
@@ -79,7 +78,6 @@ export function ResultsView(result, onViewChange, onPLayAgain) {
          </div>
       </div>
 
-      <!-- Breakdown -->
       <div class="flex flex-col gap-6">
          <h3 class="text-2xl font-bold flex items-center gap-3 text-white">
             <span class="material-symbols-outlined text-primary">analytics</span>
@@ -87,11 +85,11 @@ export function ResultsView(result, onViewChange, onPLayAgain) {
          </h3>
          
          <div class="grid gap-4">
-            ${result.answers.map((ans, idx) => `
-               <div class="glass-card border-l-4 rounded-xl p-5 flex gap-4 transition-all hover:bg-white/5 ${ans.isCorrect ? 'border-l-emerald-500/50' : 'border-l-red-500/50'}">
+            ${answers.map((ans, idx) => `
+               <div class="glass-card border-l-4 rounded-xl p-5 flex gap-4 transition-all hover:bg-white/5 border-l-primary/40">
                   <div class="flex-shrink-0 mt-1">
-                     <div class="size-8 rounded-full flex items-center justify-center border ${ans.isCorrect ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' : 'bg-red-500/10 text-red-500 border-red-500/20'}">
-                        <span class="material-symbols-outlined text-lg">${ans.isCorrect ? 'check' : 'close'}</span>
+                     <div class="size-8 rounded-full flex items-center justify-center border bg-primary/10 text-primary border-primary/20">
+                        <span class="material-symbols-outlined text-lg">quiz</span>
                      </div>
                   </div>
                   <div class="flex-1 space-y-2">
@@ -100,8 +98,14 @@ export function ResultsView(result, onViewChange, onPLayAgain) {
                      </div>
                      <div class="flex items-center gap-2">
                         <span class="text-sm text-gray-400">Your Answer:</span>
-                        <span class="text-sm font-bold font-mono ${ans.isCorrect ? 'text-emerald-400' : 'text-red-400'}">
-                           ${ans.userAnswer}
+                        <span class="text-sm font-bold font-mono text-primary">
+                           ${ans.selected ?? "No answer"}
+                        </span>
+                     </div>
+                     <div class="flex items-center gap-2">
+                        <span class="text-sm text-gray-400">Correct Answer:</span>
+                        <span class="text-sm font-bold font-mono text-primary">
+                           ${ans.correctAnswer  ?? "No answer"}
                         </span>
                      </div>
                   </div>
